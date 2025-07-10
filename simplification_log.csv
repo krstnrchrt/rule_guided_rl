@@ -1,0 +1,233 @@
+original,rule,applied,simplified
+Das Buch wird gelesen .,split_on_punctuation,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,simplify_subordinate,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,simplify_coordinate,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,convert_passive_to_active,True,Man hat Das Buch gelesen.
+Man hat Das Buch gelesen.,normalize_verb_tense,False,Man hat Das Buch gelesen.
+Der Brief wurde geschrieben .,split_on_punctuation,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,simplify_subordinate,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,simplify_coordinate,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,convert_passive_to_active,True,Man hat Der Brief geschrieben.
+Man hat Der Brief geschrieben.,normalize_verb_tense,False,Man hat Der Brief geschrieben.
+Das Essen wird von den Kindern gekocht .,split_on_punctuation,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,simplify_subordinate,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,simplify_coordinate,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,convert_passive_to_active,True,den Kindern hat Das Essen gekocht.
+den Kindern hat Das Essen gekocht.,normalize_verb_tense,False,den Kindern hat Das Essen gekocht.
+Die Aufgabe wurde gestern von meinem Freund fertig .,split_on_punctuation,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,simplify_subordinate,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,simplify_coordinate,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,convert_passive_to_active,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,normalize_verb_tense,True,Aufgabe ist Die gestern von meinem Freund fertig geworden.
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,split_on_punctuation,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,simplify_subordinate,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,simplify_coordinate,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,convert_passive_to_active,True,Man hat ein neues Mittel verschrieben.
+Man hat ein neues Mittel verschrieben.,normalize_verb_tense,False,Man hat ein neues Mittel verschrieben.
+Er ging nach Hause .,split_on_punctuation,False,Er ging nach Hause .
+Er ging nach Hause .,simplify_subordinate,False,Er ging nach Hause .
+Er ging nach Hause .,simplify_coordinate,False,Er ging nach Hause .
+Er ging nach Hause .,convert_passive_to_active,False,Er ging nach Hause .
+Er ging nach Hause .,normalize_verb_tense,True,Er ist nach Hause gegangen.
+Wir werden morgen kommen .,split_on_punctuation,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,simplify_subordinate,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,simplify_coordinate,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,convert_passive_to_active,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,normalize_verb_tense,True,Wir werden morgen kommen .
+Sie hätte das Buch gelesen .,split_on_punctuation,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,simplify_subordinate,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,simplify_coordinate,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,convert_passive_to_active,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,normalize_verb_tense,True,Sie hat das Buch gelesen .
+Du machst deine Haus·Aufgaben .,split_on_punctuation,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,simplify_subordinate,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,simplify_coordinate,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,convert_passive_to_active,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,normalize_verb_tense,False,Du machst deine Haus·Aufgaben .
+Der Hund ist schnell gelaufen .,split_on_punctuation,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,simplify_subordinate,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,simplify_coordinate,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,convert_passive_to_active,True,Man ist Der Hund gelaufen.
+Man ist Der Hund gelaufen.,normalize_verb_tense,False,Man ist Der Hund gelaufen.
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,Die Abtei·Lung für Müll·Wirtschaft
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,"eine Gruppe , die sehr wichtig ist"
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,"hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde ."
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,False,Die Abtei·Lung für Müll·Wirtschaft
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,False,"eine Gruppe , die sehr wichtig ist"
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,True,das Vertrag mit der Schule nein wurde.
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,True,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,simplify_coordinate,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",simplify_coordinate,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,simplify_coordinate,False,das Vertrag mit der Schule nein wurde.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,simplify_coordinate,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,convert_passive_to_active,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",convert_passive_to_active,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,convert_passive_to_active,False,das Vertrag mit der Schule nein wurde.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,convert_passive_to_active,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,normalize_verb_tense,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",normalize_verb_tense,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,normalize_verb_tense,True,Vertrag ist das mit der Schule nein geworden.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,normalize_verb_tense,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",split_on_punctuation,True,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",simplify_subordinate,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",simplify_coordinate,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",convert_passive_to_active,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",normalize_verb_tense,True,"Herr hat Müller , der Leiter der Abtei·Lung , ein ähnliches Konzept wie im letzten Stück ; gewählt"
+aber wurde dieses Konzept langsam angepasst .,split_on_punctuation,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,simplify_subordinate,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,simplify_coordinate,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,convert_passive_to_active,True,Man hat dieses Konzept angepasst.
+Man hat dieses Konzept angepasst.,normalize_verb_tense,False,Man hat dieses Konzept angepasst.
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,split_on_punctuation,True,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,simplify_subordinate,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,simplify_coordinate,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,convert_passive_to_active,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,normalize_verb_tense,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",split_on_punctuation,False,"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit ."
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_subordinate,False,"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit ."
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_coordinate,True,Die Kollege sind böse und verrückt in ihrer Reaktion .
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_coordinate,True,Aber sie wählen außerdem über das neue System seit .
+Die Kollege sind böse und verrückt in ihrer Reaktion .,convert_passive_to_active,False,Die Kollege sind böse und verrückt in ihrer Reaktion .
+Aber sie wählen außerdem über das neue System seit .,convert_passive_to_active,False,Aber sie wählen außerdem über das neue System seit .
+Die Kollege sind böse und verrückt in ihrer Reaktion .,normalize_verb_tense,False,Die Kollege sind böse und verrückt in ihrer Reaktion .
+Aber sie wählen außerdem über das neue System seit .,normalize_verb_tense,False,Aber sie wählen außerdem über das neue System seit .
+Der Hund lief nach Hause .,split_on_punctuation,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,simplify_subordinate,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,simplify_coordinate,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,convert_passive_to_active,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,normalize_verb_tense,True,Hund ist Der nach Hause gelaufen.
+Er wird das Paket morgen holen .,split_on_punctuation,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,simplify_subordinate,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,simplify_coordinate,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,convert_passive_to_active,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,normalize_verb_tense,True,Er wird das Paket morgen holen .
+"Sie würde es kaufen , wenn sie könnte .",split_on_punctuation,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",simplify_subordinate,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",simplify_coordinate,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",convert_passive_to_active,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",normalize_verb_tense,True,"Sie wird es kaufen , wenn sie kann ."
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",split_on_punctuation,False,"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause ."
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",simplify_subordinate,True,er gestern nach Hause ging.
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",simplify_subordinate,True,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,simplify_coordinate,False,er gestern nach Hause ging.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,simplify_coordinate,False,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,convert_passive_to_active,False,er gestern nach Hause ging.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,convert_passive_to_active,False,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,normalize_verb_tense,True,er ist gestern nach Hause gegangen.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,normalize_verb_tense,True,er hat Trotzdem sehr lange für den Weg nach Hause gebraucht.
+Das Buch wird gelesen .,split_on_punctuation,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,simplify_subordinate,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,simplify_coordinate,False,Das Buch wird gelesen .
+Das Buch wird gelesen .,convert_passive_to_active,True,Man hat Das Buch gelesen.
+Man hat Das Buch gelesen.,normalize_verb_tense,False,Man hat Das Buch gelesen.
+Der Brief wurde geschrieben .,split_on_punctuation,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,simplify_subordinate,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,simplify_coordinate,False,Der Brief wurde geschrieben .
+Der Brief wurde geschrieben .,convert_passive_to_active,True,Man hat Der Brief geschrieben.
+Man hat Der Brief geschrieben.,normalize_verb_tense,False,Man hat Der Brief geschrieben.
+Das Essen wird von den Kindern gekocht .,split_on_punctuation,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,simplify_subordinate,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,simplify_coordinate,False,Das Essen wird von den Kindern gekocht .
+Das Essen wird von den Kindern gekocht .,convert_passive_to_active,True,den Kindern hat Das Essen gekocht.
+den Kindern hat Das Essen gekocht.,normalize_verb_tense,False,den Kindern hat Das Essen gekocht.
+Die Aufgabe wurde gestern von meinem Freund fertig .,split_on_punctuation,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,simplify_subordinate,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,simplify_coordinate,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,convert_passive_to_active,False,Die Aufgabe wurde gestern von meinem Freund fertig .
+Die Aufgabe wurde gestern von meinem Freund fertig .,normalize_verb_tense,True,Aufgabe ist Die gestern von meinem Freund fertig geworden.
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,split_on_punctuation,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,simplify_subordinate,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,simplify_coordinate,False,Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .
+Dem Patienten wurde ein neues Mittel vom Doktor verschrieben .,convert_passive_to_active,True,Man hat ein neues Mittel verschrieben.
+Man hat ein neues Mittel verschrieben.,normalize_verb_tense,False,Man hat ein neues Mittel verschrieben.
+Er ging nach Hause .,split_on_punctuation,False,Er ging nach Hause .
+Er ging nach Hause .,simplify_subordinate,False,Er ging nach Hause .
+Er ging nach Hause .,simplify_coordinate,False,Er ging nach Hause .
+Er ging nach Hause .,convert_passive_to_active,False,Er ging nach Hause .
+Er ging nach Hause .,normalize_verb_tense,True,Er ist nach Hause gegangen.
+Wir werden morgen kommen .,split_on_punctuation,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,simplify_subordinate,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,simplify_coordinate,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,convert_passive_to_active,False,Wir werden morgen kommen .
+Wir werden morgen kommen .,normalize_verb_tense,True,Wir werden morgen kommen .
+Sie hätte das Buch gelesen .,split_on_punctuation,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,simplify_subordinate,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,simplify_coordinate,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,convert_passive_to_active,False,Sie hätte das Buch gelesen .
+Sie hätte das Buch gelesen .,normalize_verb_tense,True,Sie hat das Buch gelesen .
+Du machst deine Haus·Aufgaben .,split_on_punctuation,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,simplify_subordinate,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,simplify_coordinate,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,convert_passive_to_active,False,Du machst deine Haus·Aufgaben .
+Du machst deine Haus·Aufgaben .,normalize_verb_tense,False,Du machst deine Haus·Aufgaben .
+Der Hund ist schnell gelaufen .,split_on_punctuation,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,simplify_subordinate,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,simplify_coordinate,False,Der Hund ist schnell gelaufen .
+Der Hund ist schnell gelaufen .,convert_passive_to_active,True,Man ist Der Hund gelaufen.
+Man ist Der Hund gelaufen.,normalize_verb_tense,False,Man ist Der Hund gelaufen.
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,Die Abtei·Lung für Müll·Wirtschaft
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,"eine Gruppe , die sehr wichtig ist"
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",split_on_punctuation,True,"hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde ."
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,False,Die Abtei·Lung für Müll·Wirtschaft
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,False,"eine Gruppe , die sehr wichtig ist"
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,True,das Vertrag mit der Schule nein wurde.
+"Die Abtei·Lung für Müll·Wirtschaft – eine Gruppe , die sehr wichtig ist – hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden , obwohl das Vertrag mit der Schule nein wurde .",simplify_subordinate,True,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,simplify_coordinate,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",simplify_coordinate,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,simplify_coordinate,False,das Vertrag mit der Schule nein wurde.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,simplify_coordinate,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,convert_passive_to_active,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",convert_passive_to_active,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,convert_passive_to_active,False,das Vertrag mit der Schule nein wurde.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,convert_passive_to_active,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+Die Abtei·Lung für Müll·Wirtschaft,normalize_verb_tense,False,Die Abtei·Lung für Müll·Wirtschaft
+"eine Gruppe , die sehr wichtig ist",normalize_verb_tense,False,"eine Gruppe , die sehr wichtig ist"
+das Vertrag mit der Schule nein wurde.,normalize_verb_tense,True,Vertrag ist das mit der Schule nein geworden.
+Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .,normalize_verb_tense,False,Trotzdem hat heute einen neuen Vertrag fertig und sie sind sehr reich geworden .
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",split_on_punctuation,True,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",simplify_subordinate,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",simplify_coordinate,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",convert_passive_to_active,False,"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;"
+"Herr Müller , der Leiter der Abtei·Lung , wählte ein ähnliches Konzept wie im letzten Stück ;",normalize_verb_tense,True,"Herr hat Müller , der Leiter der Abtei·Lung , ein ähnliches Konzept wie im letzten Stück ; gewählt"
+aber wurde dieses Konzept langsam angepasst .,split_on_punctuation,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,simplify_subordinate,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,simplify_coordinate,False,aber wurde dieses Konzept langsam angepasst .
+aber wurde dieses Konzept langsam angepasst .,convert_passive_to_active,True,Man hat dieses Konzept angepasst.
+Man hat dieses Konzept angepasst.,normalize_verb_tense,False,Man hat dieses Konzept angepasst.
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,split_on_punctuation,True,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,simplify_subordinate,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,simplify_coordinate,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,convert_passive_to_active,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+Vorsicht : Abbild·Ungen der Lösung mitkommen noch .,normalize_verb_tense,False,Vorsicht : Abbild·Ungen der Lösung mitkommen noch .
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",split_on_punctuation,False,"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit ."
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_subordinate,False,"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit ."
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_coordinate,True,Die Kollege sind böse und verrückt in ihrer Reaktion .
+"Die Kollege sind böse und verrückt in ihrer Reaktion , aber sie wählen außerdem über das neue System seit .",simplify_coordinate,True,Aber sie wählen außerdem über das neue System seit .
+Die Kollege sind böse und verrückt in ihrer Reaktion .,convert_passive_to_active,False,Die Kollege sind böse und verrückt in ihrer Reaktion .
+Aber sie wählen außerdem über das neue System seit .,convert_passive_to_active,False,Aber sie wählen außerdem über das neue System seit .
+Die Kollege sind böse und verrückt in ihrer Reaktion .,normalize_verb_tense,False,Die Kollege sind böse und verrückt in ihrer Reaktion .
+Aber sie wählen außerdem über das neue System seit .,normalize_verb_tense,False,Aber sie wählen außerdem über das neue System seit .
+Der Hund lief nach Hause .,split_on_punctuation,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,simplify_subordinate,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,simplify_coordinate,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,convert_passive_to_active,False,Der Hund lief nach Hause .
+Der Hund lief nach Hause .,normalize_verb_tense,True,Hund ist Der nach Hause gelaufen.
+Er wird das Paket morgen holen .,split_on_punctuation,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,simplify_subordinate,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,simplify_coordinate,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,convert_passive_to_active,False,Er wird das Paket morgen holen .
+Er wird das Paket morgen holen .,normalize_verb_tense,True,Er wird das Paket morgen holen .
+"Sie würde es kaufen , wenn sie könnte .",split_on_punctuation,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",simplify_subordinate,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",simplify_coordinate,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",convert_passive_to_active,False,"Sie würde es kaufen , wenn sie könnte ."
+"Sie würde es kaufen , wenn sie könnte .",normalize_verb_tense,True,"Sie wird es kaufen , wenn sie kann ."
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",split_on_punctuation,False,"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause ."
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",simplify_subordinate,True,er gestern nach Hause ging.
+"Obwohl er gestern nach Hause ging , brauchte er sehr lange für den Weg nach Hause .",simplify_subordinate,True,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,simplify_coordinate,False,er gestern nach Hause ging.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,simplify_coordinate,False,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,convert_passive_to_active,False,er gestern nach Hause ging.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,convert_passive_to_active,False,Trotzdem brauchte er sehr lange für den Weg nach Hause .
+er gestern nach Hause ging.,normalize_verb_tense,True,er ist gestern nach Hause gegangen.
+Trotzdem brauchte er sehr lange für den Weg nach Hause .,normalize_verb_tense,True,er hat Trotzdem sehr lange für den Weg nach Hause gebraucht.
