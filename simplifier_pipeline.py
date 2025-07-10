@@ -32,8 +32,8 @@ nlp = spacy.load("de_core_news_lg")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Build your path *relative* to the script's location
-utf8_file = os.path.join(SCRIPT_DIR, "resources", "german", "german_utf8.dic")
-ahocs = comp_split.read_dictionary_from_file(utf8_file)
+utf8_file = os.path.join(SCRIPT_DIR, "resources", "german_dict", "german_utf8.dic")
+ahocs = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
 
 # ---
 
@@ -91,7 +91,7 @@ def split_compound_word(text):
 
 # == Text Replacement Functions ===
 # Load the mapping from JSON
-with open("alternative_woerter.json", encoding="utf-8") as f:
+with open("resources/replace_words/alternative_woerter.json", encoding="utf-8") as f:
     mapped_dict = json.load(f)
 
 # Build a regex that matches any key as a whole word
@@ -112,6 +112,7 @@ def replace_easy_german(text: str) -> str:
 class SimplifierPipeline:
     def __init__(self):
         self.simplification_log = []  # Each entry will be a dict with orig, rule, simplified
+        self.current_doc_name = None
         # Initialize rules
         self.rules = [
             {"condition": should_split_on_punctuation, "action": split_on_punctuation},
@@ -147,23 +148,33 @@ class SimplifierPipeline:
             #logger.debug("-------- \n simplified \n -------- \n%s", pformat(simplified))
         return simplified
 
-    def log_step(self, original, rule, applied, simplified):
+    def log_step(self, original, rule, applied, simplified, doc_name=None):
         # If 'simplified' is a list, log each separately for full traceability
+        if doc_name is None:
+            doc_name = self.current_doc_name # Use current doc name if not provided
+            
         if isinstance(simplified, list):
             for item in simplified:
-                self.simplification_log.append({
+                entry = {
                     "original": str(original),
                     "rule": rule,
                     "applied": applied,
                     "simplified": str(item)
-                })
+                }
+                if doc_name:
+                    entry["doc_name"] = doc_name
+                self.simplification_log.append(entry)
         else:
-            self.simplification_log.append({
+            entry = {
                 "original": str(original),
                 "rule": rule,
                 "applied": applied,
                 "simplified": str(simplified)
-            })
+            }
+            if doc_name:
+                entry["doc_name"] = doc_name
+            self.simplification_log.append(entry)
+        
     def append_log_to_csv(self, csv_path="simplification_log.csv"):
         if not self.simplification_log:
             return  # nothing to write
@@ -375,7 +386,7 @@ class SimplifierPipeline:
         #print(type(simplified_sentences))
         return simplified_sentences
         
-    def simplify_from_lines(self, conll_lines):
+    def simplify_from_lines(self, conll_lines, doc_name=None):
         #logger.debug("-------- \n conll_lines \n -------- \n%s", pformat(conll_lines))
         sentences = parse_blocks(conll_lines)
         #logger.debug("-------- \n sentences \n -------- \n%s", pformat(sentences))
@@ -384,6 +395,8 @@ class SimplifierPipeline:
 
         # Reset log at start of a batch/document
         self.simplification_log = []
+        # Update doc_name within function
+        self.current_doc_name = doc_name
 
         for tokens in sentences:
               
@@ -436,7 +449,11 @@ class SimplifierPipeline:
             all_simplified_text.append(joined)  # One line per simplified sentence
 
         # 6. After all sentences are processed, append the log once
-        self.append_log_to_csv("simplification_log.csv")  # Save log after each document
+        if doc_name is None:
+            doc_name = "unknown_doc"
+        base_name = os.path.splitext(os.path.basename(doc_name))[0]
+        csv_path = f"simplification_logs/{base_name}_log.csv"
+        self.append_log_to_csv(csv_path)  # Save log after each document
 
         #return "\n".join(all_simplified)
         # Return both outputs (optionally, as a tuple or dict)

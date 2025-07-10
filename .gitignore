@@ -1,9 +1,12 @@
 #structural files
-
+__pycache__/
+*.pyc
 .DS_Store
 
 # resouces files to stay out for now
 resources/
+preprocessed_texts/
+simplification_logs/
 
 # ignore metrics and outdated files
 metrics/
