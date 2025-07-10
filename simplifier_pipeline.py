@@ -35,31 +35,52 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 utf8_file = os.path.join(SCRIPT_DIR, "resources", "german_dict", "german_utf8.dic")
 ahocs = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
 
-# ---
+# --- Number Transformation ---
 
 NUMBER_DICT = {
-    "erster": "1", "zweiter": "2", "dritter": "3", "vierter": "4", "fünfter": "5",
-    "sechster": "6", "siebter": "7", "achter": "8", "neunter": "9", "zehnter": "10",
-    "eineinhalb": "1.5", "zweieinhalb": "2.5", "dreieinhalb": "3.5",
-    "viereinhalb": "4.5", "fünfeinhalb": "5.5", "sechseinhalb": "6.5",
-    "siebeneinhalb": "7.5", "achteinhalb": "8.5", "neuneinhalb": "9.5", "zehneinhalb": "10.5"
+    # Ordinals
+    "erster": "1", "zweiter": "2", "dritter": "3", "vierter": "4", "fünfter": "5", "sechster": "6", "siebter": "7",
+    "achter": "8", "neunter": "9", "zehnter": "10", "elfter": "11", "zwölfter": "12",
+    # Fractions
+    "halb": "0.5", "eineinhalb": "1.5", "zweieinhalb": "2.5", "dreieinhalb": "3.5", "viereinhalb": "4.5",
+    "fünfeinhalb": "5.5", "sechseinhalb": "6.5", "siebeneinhalb": "7.5", "achteinhalb": "8.5", "neuneinhalb": "9.5", "zehneinhalb": "10.5",
 }
 
-# -- Utlity Functions
+RE_NUMERIC = re.compile(r"^\d+([.,]\d+)?$")
+RE_ORDINAL = re.compile(r"^\d+\.$")
+
+def like_num(text):
+    text_lower = text.lower()
+    if text_lower in NUMBER_DICT:
+        return True
+    if RE_NUMERIC.match(text) or RE_ORDINAL.match(text):
+        return True
+    try:
+        word_to_number(text_lower)  # word2num_de
+        return True
+    except Exception:
+        return False
+
 def is_number(token):
     text_lower = token['text'].lower()
-    return text_lower != "ein" and (text_lower in NUMBER_DICT or token['pos'] == "NUM")
+    #return text_lower != "ein" and (text_lower in NUMBER_DICT or token['pos'] == "NUM")
+    return text_lower != "ein" and (like_num(text_lower) in NUMBER_DICT or token['pos'] == "NUM")
 
 def convert_word_to_number(text):
     text_lower = text.lower()
     if text_lower in NUMBER_DICT:
         return NUMBER_DICT[text_lower]
-    if text.isdigit():
-        return text
+    if RE_NUMERIC.match(text):
+        return text.replace(",", ".")
+    if RE_ORDINAL.match(text):
+        return text[:-1]
     try:
-        return str(word_to_number(text_lower))
+        return str(word_to_number(text_lower))  # word2num_de
     except Exception:
-        return text #fallback, return as it was
+        return text
+
+
+# ----
 
 def check_compound_split(token):
     return (
