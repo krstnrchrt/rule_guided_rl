@@ -2,4 +2,9 @@
 
 .DS_Store
 
+# resouces files to stay out for now
 resources/
+
+# ignore metrics and outdated files
+metrics/
+outdated_code/
