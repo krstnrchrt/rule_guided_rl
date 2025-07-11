@@ -114,30 +114,107 @@ def has_apposition(doc):
     match = re.search(r', (?!die |der |das |und |aber |weil |obwohl )[^,]+,', doc.text)
     return bool(match)
 
-def delete_apposition(doc):
-    # Mark tokens to delete
-    to_delete = set()
+def find_full_referent(doc, appo_start):
+    """
+    Return the string of the full referent NP before the apposition.
+    """
+    # Go back from appo_start - 2 (just before comma)
+    end = appo_start - 2
+    start = end
+    while start > 0:
+        tok = doc[start-1]
+        if tok.pos_ in ("DET", "ADJ", "NOUN", "PROPN"):
+            start -= 1
+        else:
+            break
+    referent_tokens = [doc[i].text for i in range(start, end+1)]
+    return " ".join(referent_tokens).strip()
+
+
+def rewrite_apposition(doc):
+# Find all apposition tokens
+    # Find the first apposition
     for tok in doc:
         if tok.dep_ == "app":
-            # Add the apposition subtree
-            to_delete.update(t.i for t in tok.subtree)
-            # Also add the comma before apposition, if present
-            if tok.nbor(-1).text == ",":
-                to_delete.add(tok.nbor(-1).i)
-            # And possibly comma after
-            try:
-                if tok.subtree[-1].nbor(1).text == ",":
-                    to_delete.add(tok.subtree[-1].nbor(1).i)
-            except Exception:
-                pass
+            # Find the start and end of apposition (Y)
+            appo_start = min([t.i for t in tok.subtree])
+            appo_end = max([t.i for t in tok.subtree])
 
-    tokens = [tok.text for i, tok in enumerate(doc) if i not in to_delete]
-    # Clean up double spaces and stray commas
-    text = " ".join(tokens)
-    text = re.sub(r'\s+,', ',', text)
-    text = re.sub(r',\s+', ', ', text)
-    text = re.sub(r'\s{2,}', ' ', text)
-    return text.strip()
+            # Find referent (X): tokens before apposition's first comma
+            # referent_end = appo_start - 2  # comma is at appo_start - 1
+            # referent_start = referent_end
+            # # Walk back to start of NP
+            # while referent_start > 0 and doc[referent_start-1].pos_ in ("DET", "ADJ", "NOUN", "PROPN", "PRON"):
+            #     referent_start -= 1
+            # referent_tokens = [doc[i].text for i in range(referent_start, referent_end+1)]
+            # referent = " ".join(referent_tokens).strip()
+
+            referent = find_full_referent(doc, appo_start)
+
+            # Apposition tokens
+            appo_tokens = [doc[i].text for i in range(appo_start, appo_end+1)]
+            appo = " ".join(appo_tokens).strip()
+
+            # Main sentence: remove apposition and both commas
+            keep = []
+            for i, t in enumerate(doc):
+                # skip referent comma
+                if i == appo_start - 1 and t.text == ",":
+                    continue
+                # skip apposition and following comma
+                if appo_start <= i <= appo_end:
+                    continue
+                if i == appo_end + 1 and t.text == ",":
+                    continue
+                keep.append(t.text)
+            main_sentence = " ".join(keep)
+            main_sentence = re.sub(r"\s+,", ",", main_sentence)
+            main_sentence = re.sub(r",\s+", ", ", main_sentence)
+            main_sentence = re.sub(r"\s{2,}", " ", main_sentence)
+            main_sentence = re.sub(r"\s+([.?!])", r"\1", main_sentence)
+            main_sentence = main_sentence.strip()
+
+            # "X ist Y."
+            appo_sentence = f"{referent} ist {appo}."
+            appo_sentence = re.sub(r"\s{2,}", " ", appo_sentence)
+            appo_sentence = re.sub(r"\s+([.?!])", r"\1", appo_sentence)
+            appo_sentence = appo_sentence.strip()
+
+            # Output: main sentence, apposition sentence
+            result = []
+            if main_sentence:
+                result.append(main_sentence)
+            result.append(appo_sentence)
+            return result
+
+    # If no apposition found, return as-is
+    return [doc.text]
+# def rewrite_apposition(doc)
+    # # Mark tokens to delete
+    # to_delete = set()
+    # for tok in doc:
+    #     if tok.dep_ == "app":
+    #         # Add the apposition subtree
+    #         to_delete.update(t.i for t in tok.subtree)
+    #         # Also add the comma before apposition, if present
+    #         if tok.nbor(-1).text == ",":
+    #             to_delete.add(tok.nbor(-1).i)
+    #         # And possibly comma after
+    #         try:
+    #             if tok.subtree[-1].nbor(1).text == ",":
+    #                 to_delete.add(tok.subtree[-1].nbor(1).i)
+    #         except Exception:
+    #             pass
+
+    # tokens = [tok.text for i, tok in enumerate(doc) if i not in to_delete]
+    # # Clean up double spaces and stray commas
+    # text = " ".join(tokens)
+    # text = re.sub(r'\s+,', ',', text)
+    # text = re.sub(r',\s+', ', ', text)
+    # text = re.sub(r'\s{2,}', ' ', text)
+    # return text.strip()
+
+    
 
 
 # Split on punctuation

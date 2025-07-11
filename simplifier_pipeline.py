@@ -137,7 +137,7 @@ class SimplifierPipeline:
         # Initialize rules
         self.rules = [
             {"condition": detect_punctuation, "action": clean_syntactic_punctuation},
-            {"condition": has_apposition, "action": delete_apposition},
+            {"condition": has_apposition, "action": rewrite_apposition},
             {"condition": has_subordinate_clause, "action": simplify_subordinate},
             {"condition": has_coordinate_clause, "action": simplify_coordinate},
             {"condition": is_passive, "action": convert_passive_to_active},
@@ -244,17 +244,17 @@ class SimplifierPipeline:
 
                 if has_apposition(doc_sub_part):
                     logger.info("Applying Now !!!: %s\n", doc_sub_part)
-                    app_applied_subpart = delete_apposition(doc_sub_part)
-                    logger.info("delete_apposition Applied: %s\n", app_applied_subpart)
+                    app_applied_subpart = rewrite_apposition(doc_sub_part)
+                    logger.info("rewrite_apposition Applied: %s\n", app_applied_subpart)
                     if isinstance(app_applied_subpart, list):
                         app_applied.extend(app_applied_subpart)
                     else:
                         app_applied.append(app_applied_subpart)
-                    self.log_step(doc_sub_part, "delete_apposition", True, app_applied_subpart)
+                    self.log_step(doc_sub_part, "rewrite_apposition", True, app_applied_subpart)
                 else:
                     app_applied.append(doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
-                    logger.info("*** delete_apposition Not Applied ***")
-                    self.log_step(doc_sub_part, "delete_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
+                    logger.info("*** rewrite_apposition Not Applied ***")
+                    self.log_step(doc_sub_part, "rewrite_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
                     logger.info("--------------------------")
 
             # {"condition": has_apposition, "action": split_apposition}
