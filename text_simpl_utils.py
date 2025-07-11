@@ -3,8 +3,9 @@ import re
 import csv
 import spacy
 from spacy.tokens import Span
-from pattern.de import conjugate
-from pattern.de import INFINITIVE, PRESENT, SG, SUBJUNCTIVE, PAST, PARTICIPLE, SG, PL
+from pattern.de import conjugate, INFINITIVE, PRESENT, SUBJUNCTIVE, PAST, PARTICIPLE, SG, PL
+from pattern.de import singularize, pluralize
+
 
 import logging
 logging.basicConfig(level=logging.DEBUG,
@@ -88,6 +89,76 @@ def split_on_syntactic_punctuation(doc):
 
     return result
 
+def final_cleanup(text):
+    """Applied in Simplifier Pipeline simplify lines at the final step"""
+    # Remove spaces before punctuation
+    text = re.sub(r'\s+([.,;:?!])', r'\1', text)
+    # Remove extra spaces
+    text = re.sub(r'\s{2,}', ' ', text)
+    # Remove repeated commas
+    text = re.sub(r',\s*,+', ',', text)
+    # Remove space at start/end
+    text = text.strip()
+    return text
+
+# ====== First Level restructuring of text.
+# Apposition handling, syntactic punctuation handling
+
+# Split comma separated appositions
+def has_apposition(doc):
+    # Trigger if spaCy finds app or regex finds likely comma apposition
+    if any(tok.dep_ == "app" for tok in doc):
+        return True
+    # Fallback: regex check for ', ... ,'
+    # Only trigger if pattern matches (not followed by "die", "der", etc.)
+    match = re.search(r', (?!die |der |das |und |aber |weil |obwohl )[^,]+,', doc.text)
+    return bool(match)
+
+def delete_apposition(doc):
+    # Mark tokens to delete
+    to_delete = set()
+    for tok in doc:
+        if tok.dep_ == "app":
+            # Add the apposition subtree
+            to_delete.update(t.i for t in tok.subtree)
+            # Also add the comma before apposition, if present
+            if tok.nbor(-1).text == ",":
+                to_delete.add(tok.nbor(-1).i)
+            # And possibly comma after
+            try:
+                if tok.subtree[-1].nbor(1).text == ",":
+                    to_delete.add(tok.subtree[-1].nbor(1).i)
+            except Exception:
+                pass
+
+    tokens = [tok.text for i, tok in enumerate(doc) if i not in to_delete]
+    # Clean up double spaces and stray commas
+    text = " ".join(tokens)
+    text = re.sub(r'\s+,', ',', text)
+    text = re.sub(r',\s+', ', ', text)
+    text = re.sub(r'\s{2,}', ' ', text)
+    return text.strip()
+
+
+# Split on punctuation
+def detect_punctuation(doc):
+    return any(tok.text in {"–", ";", ":"} for tok in doc)
+
+def clean_syntactic_punctuation(doc):
+    # Replace – ; : with comma if NOT in compound
+    new_tokens = []
+    for i, tok in enumerate(doc):
+        if tok.text in {"–", ";", ":"} and not is_likely_compound(doc, i):
+            new_tokens.append(",")
+        else:
+            new_tokens.append(tok.text)
+    text = " ".join(new_tokens)
+    # Clean up multiple commas or spaces
+    text = re.sub(r'\s+,', ',', text)
+    text = re.sub(r',\s+', ', ', text)
+    text = re.sub(r'\s{2,}', ' ', text)
+    return text.strip()
+
 # def format_parsed_segments(segments):
 #     out = []
 #     for seg in segments:
@@ -152,7 +223,7 @@ SUBORDINATE_MARKERS = {
 }
 COORD_CONJ = {"oder", "aber", "dennoch"} #took "und" out
 
-
+# TO LOOK AT
 def reorder_SVO(doc):
     import re
 
@@ -221,32 +292,9 @@ def reorder_SVO(doc):
     sent = re.sub(r'\s+([.?!,])', r'\1', sent).strip()
     return sent
 
+#_________
 
 
-# Split on punctuation
-def should_split_on_punctuation(doc):
-    return any(tok.text in {"–", ";", ":"} for tok in doc)
-
-def split_on_punctuation(doc):
-    text = doc.text
-    parts = re.split(r"\s*–\s*", text)
-    return [part.strip() for part in parts if part.strip()]
-
-# Split comma separated appositions
-def has_apposition(doc):
-    return any(tok.dep_ == 'app' for tok in doc)
-
-def split_apposition(doc):
-    for tok in doc:
-        if tok.dep_ == "app":
-            head = tok.head
-            appo = list(tok.subtree)
-            appo_phrase = " ".join([t.text for t in appo])
-            main = doc.text.replace("," + appo_phrase, "").strip()
-            appo_sent = f"{head.text} ist {appo_phrase}."
-            return [main, appo_sent]
-    # If no apposition found, just return original sentence
-    return [doc.text]
 
 # -- Subordinate Clause Detection and Simplification
 def has_subordinate_clause(doc):
@@ -390,7 +438,7 @@ def simplify_coordinate(doc):
     return clauses
 
 
-# -- Passive Voice Detection and Conversion
+# ========== Convert Passive to Active ==========
 
 def get_perfekt_aux_for_verb(lemma):
     aux = AUX_VERB_DICT.get(lemma, "haben")
@@ -398,34 +446,135 @@ def get_perfekt_aux_for_verb(lemma):
         aux = aux.split("/")[0]
     return aux
 
-# List of verbs that take 'ist' as auxiliary in Perfekt
-#IST_VERBS = {"gehen", "kommen", "bleiben", "fahren", "fallen", "sterben", "sein", "werden", "aufstehen", "aufwachen"}
-# def select_auxiliary(lemma):
-#     """Include subject's number/number/gender/preson"""
-#     if lemma in IST_VERBS:
-#         return "ist"
-#     return "hat"
-#OUTDATED perfect verb lookup
-
+def get_aux_form_PA(aux_lemma, person, number):
+    if aux_lemma == "sein":
+        return {
+            ("1", "Sing"): "bin",
+            ("2", "Sing"): "bist",
+            ("3", "Sing"): "ist",
+            ("1", "Plur"): "sind",
+            ("2", "Plur"): "seid",
+            ("3", "Plur"): "sind"
+        }.get((str(person), number), "ist")
+    else:  # haben
+        return {
+            ("1", "Sing"): "habe",
+            ("2", "Sing"): "hast",
+            ("3", "Sing"): "hat",
+            ("1", "Plur"): "haben",
+            ("2", "Plur"): "habt",
+            ("3", "Plur"): "haben"
+        }.get((str(person), number), "hat")
+    
+# def is_passive(doc):
+#     # Only Vorgangspassiv (werden + participle)
+#     has_werden = any(tok.lemma_ == "werden" and tok.pos_ == "AUX" for tok in doc)
+#     has_participle = any(tok.pos_ == "VERB" and "Part" in tok.morph.get("VerbForm", []) for tok in doc)
+#     return has_werden and has_participle
+#==> needs to be assessed, does it reduce FP?
 def is_passive(doc):
-    # Passive: Aux ("werden"/"sein") + participle
-    has_passive_aux = any(tok.lemma_ in {"werden", "sein"} for tok in doc if tok.pos_ == "AUX")
+    # Werden + participle: Vorgangspassiv (event passive)
+    has_werden = any(tok.lemma_ == "werden" and tok.pos_ == "AUX" for tok in doc)
     has_participle = any(tok.pos_ == "VERB" and "Part" in tok.morph.get("VerbForm", []) for tok in doc)
-    return has_passive_aux and has_participle
+    if has_werden and has_participle:
+        return True
+    # Sein + participle: Zustandspassiv (state passive), only for transitive verbs!
+    has_sein = any(tok.lemma_ == "sein" and tok.pos_ == "AUX" for tok in doc)
+    if has_sein and has_participle:
+        # Check: is the main verb transitive (does it take an object)?
+        if any(tok.dep_ in {"oa", "obj"} for tok in doc):  # object present
+            return True
+    return False
 
-def convert_passive_to_active(doc):
-    # 1) Get the patient as the full phrase (objec in avtive)
-    patient = None
-    patient_tokens = []
+#==========================
+#1) article, case helper
+def get_nominative_article(gender, number):
+    # Basic for singular/plural
+    if number == "Plur":
+        return "die"
+    if gender == "Masc":
+        return "der"
+    if gender == "Fem":
+        return "die"
+    if gender == "Neut":
+        return "das"
+    return ""  # fallback
+
+def restore_nominative(token):
+    # Uses lemma and morph to restore correct article/case
+    gender = token.morph.get("Gender", [None])[0]
+    number = token.morph.get("Number", [None])[0]
+    lemma = token.lemma_
+
+    if number == "Plur":
+        article = "die"
+        noun = pluralize(lemma)
+    else:
+        article = get_nominative_article(gender, number)
+        noun = lemma
+
+    # For proper nouns (PER, LOC, ORG), don't use article
+    if token.ent_type_ in {"PER", "LOC", "ORG"}:
+        return noun
+    else:
+        return f"{article.capitalize()} {noun}"
+
+
+def extract_agent(doc):
+    for tok in doc:
+        if tok.text.lower() in {"von", "vom", "durch"} and tok.dep_ == "sbp":
+            for child in tok.children:
+                if child.dep_ == "nk" and child.pos_ in {"NOUN", "PROPN"}:
+                    # Use lemma and article for nominative
+                    return restore_nominative(child), child.morph.get("Number", ["Sing"])[0], 3
+    return None, "Sing", 3  # fallback: person 3rd
+
+
+def extract_patient(doc):
+    # Look for recipient (dative object)
+    for tok in doc:
+        if tok.dep_ == "da":
+            return " ".join([t.text for t in tok.subtree])
+    return ""
+
+def extract_direct_object(doc):
+    # The thing acted on (usually 'sb' in passive)
     for tok in doc:
         if tok.dep_ == "sb":
-            # get the whole noun phrase for the patient
-            # (tokens in subtree of the subject)
-            patient_tokens = [t.text for t in tok.subtree]
-            patient = " ".join(patient_tokens)
-            break
+            return " ".join([t.text for t in tok.subtree])
+    return ""
 
-    # 2) Find main verb in participle form adn lemma
+def extract_negation(doc):
+    # Only add sentence negation ("nicht", "gar nichts"), not "kein"/"keine" used as determiner
+    negs = []
+    for tok in doc:
+        # "nicht" as sentential negation
+        if tok.text.lower() == "nicht" and tok.dep_ == "ng":
+            negs.append(tok.text)
+        # "gar nichts" as phrase
+        if tok.text.lower() == "gar":
+            # Look ahead for "nichts"
+            next_tok = tok.nbor(1) if tok.i+1 < len(doc) else None
+            if next_tok and next_tok.text.lower() == "nichts":
+                negs.append(f"{tok.text} {next_tok.text}")
+        # "kein", "keine" as determiner of noun, ignore here
+        # (Let them stay inside object phrase, do not repeat before verb)
+    # Remove duplicates and join
+    negs = list(dict.fromkeys(negs))
+    return " ".join(negs)
+
+def convert_passive_to_active(doc):
+    agent, subj_number, subj_person = extract_agent(doc)
+    subject = agent if agent else "Man"
+    recipient = extract_patient(doc)
+    obj = extract_direct_object(doc)
+    # Only extract sentential negation (not noun negation)
+    negation = extract_negation(doc)
+
+    # Check if "kein" or "keine" is already in the object phrase
+    if any(word in obj for word in ["kein", "keine", "keiner", "keines", "keinen", "keinem"]):
+        negation = ""  # Don't repeat in negation string
+
     participle = None
     verb_lemma = None
     for tok in doc:
@@ -436,37 +585,15 @@ def convert_passive_to_active(doc):
         if tok.pos_ == "VERB":
             verb_lemma = tok.lemma_
 
-    # 3)Find agent introduced by 'von'
-    agent = None
-    for tok in doc:
-        if tok.text.lower() == "von":
-            # get the token after "von" (usually the agent)
-            # agent_tokens = [t for t in tok.subtree if t.text.lower() != "von"]
-            # agent = " ".join(t.text for t in agent_tokens)
-            agent_tokens = [t.text for t in tok.subtree if t.text.lower() != "von"]
-            agent = " ".join(agent_tokens)
-            break
-
-    # 4)Choose auxiliary
     aux_lemma = get_perfekt_aux_for_verb(verb_lemma)
-    aux = get_aux_form(aux_lemma, agent)
+    aux = get_aux_form_PA(aux_lemma, subj_person, subj_number)
+    recipient_str = (recipient + " ") if recipient else ""
+    negation_str = (negation + " ") if negation else ""
+    s = f"{subject} {aux} {recipient_str}{obj} {negation_str}{participle}."
+    s = " ".join(s.split())
+    return s[0].upper() + s[1:]
 
-    # 5)Build simplified active sentence
-    subject = agent if agent else "Man"
-    if not patient:
-        patient = "" #fallback
-
-    # If there is a participle, use Perfekt
-    if participle:
-        return f"{subject} {aux} {patient} {participle}."
-    #Fallback - if no participla, aplly präteritum
-    if verb_lemma:
-        prat_apply = conjugate(verb_lemma, PAST, person=3, number=SG)
-        return f"{subject} {prat_apply} {patient}."
-    
-    # If no participle or verb, return original text
-    return doc.text
-
+# ========
 def has_disallowed_tense(doc):
     for tok in doc:
         if tok.pos_ in ("VERB", "AUX"):
@@ -618,18 +745,18 @@ def normalize_verb_tense(doc):
 
     
 
-# -- Recursive simplification function
-def simplify_sentence(doc):
-    """ Input: spacy parsed doc
-    Output: list of simplified sentences"""
+# # -- Recursive simplification function
+# def simplify_sentence(doc):
+#     """ Input: spacy parsed doc
+#     Output: list of simplified sentences"""
 
-    if should_split_on_punctuation(doc):
-        return split_on_syntactic_punctuation(doc)
-    elif has_apposition(doc):
-        return split_apposition(doc)
-    elif has_subordinate_clause(doc):
-        return simplify_subordinate(doc)
-    elif has_coordinate_clause(doc):
-        return simplify_coordinate(doc)
-    else:
-        return [doc.text] #default, return as it is
+#     if should_split_on_punctuation(doc):
+#         return split_on_syntactic_punctuation(doc)
+#     elif has_apposition(doc):
+#         return split_apposition(doc)
+#     elif has_subordinate_clause(doc):
+#         return simplify_subordinate(doc)
+#     elif has_coordinate_clause(doc):
+#         return simplify_coordinate(doc)
+#     else:
+#         return [doc.text] #default, return as it is
