@@ -136,8 +136,8 @@ class SimplifierPipeline:
         self.current_doc_name = None
         # Initialize rules
         self.rules = [
-            {"condition": should_split_on_punctuation, "action": split_on_punctuation},
-            {"condition": has_apposition, "action": split_apposition},
+            {"condition": detect_punctuation, "action": clean_syntactic_punctuation},
+            {"condition": has_apposition, "action": delete_apposition},
             {"condition": has_subordinate_clause, "action": simplify_subordinate},
             {"condition": has_coordinate_clause, "action": simplify_coordinate},
             {"condition": is_passive, "action": convert_passive_to_active},
@@ -212,30 +212,50 @@ class SimplifierPipeline:
         for text_sentence in text_sentences:
         #for token in tokens:
             
-            #logger.debug("-------- \n text_sentence \n -------- \n%s", pformat(text_sentence))
             doc_text_sentence = nlp(text_sentence)
             logger.debug("-------- \n INPUT: -------- %s\n", pformat(doc_text_sentence))
             #logger.debug("-------- \n token \n -------- \n%s", pformat(token))
             #logger.debug("-------- \n tokens \n -------- \n%s", pformat(tokens))
 
             logger.info("--------------------------")
-
-            # {"condition": should_split_on_punctuation, "action": split_on_punctuation}
-            if should_split_on_punctuation(doc_text_sentence):
+            if detect_punctuation(doc_text_sentence):
                 logger.info("Applying Now !!!: %s\n", doc_text_sentence)
-                punc_applied = split_on_punctuation(doc_text_sentence)
-                logger.info("split_on_punctuation Applied: %s\n", punc_applied)
-                logger.info("*** split_on_punctuation Applied ***")
+                punc_applied = clean_syntactic_punctuation(doc_text_sentence)
+                logger.info("clean_punctuation Applied: %s\n", punc_applied)
+                if isinstance(punc_applied, str):
+                    punc_applied = [punc_applied] # list of strings (sentences) or Doc
+                logger.info("*** clean_punctuation Applied ***")
 
                 #once rule was applied, save it to the log
-                self.log_step(doc_text_sentence, "split_on_punctuation", True, punc_applied)
+                self.log_step(doc_text_sentence, "clean_punctuation", True, punc_applied)
                 
             else:
                 punc_applied = [doc_text_sentence]
-                logger.info("*** split_on_punctuation Not Applied ***")
-                self.log_step(doc_text_sentence, "split_on_punctuation", False, doc_text_sentence)
+                logger.info("*** clean_punctuation Not Applied ***")
+                self.log_step(doc_text_sentence, "clean_punctuation", False, doc_text_sentence)
 
             logger.info("--------------------------")
+            
+
+            app_applied = []
+
+            for sub_part in punc_applied:
+                doc_sub_part = nlp(sub_part) #if isinstance(sub_part, str) else sub_part
+
+                if has_apposition(doc_sub_part):
+                    logger.info("Applying Now !!!: %s\n", doc_sub_part)
+                    app_applied_subpart = delete_apposition(doc_sub_part)
+                    logger.info("delete_apposition Applied: %s\n", app_applied_subpart)
+                    if isinstance(app_applied_subpart, list):
+                        app_applied.extend(app_applied_subpart)
+                    else:
+                        app_applied.append(app_applied_subpart)
+                    self.log_step(doc_sub_part, "delete_apposition", True, app_applied_subpart)
+                else:
+                    app_applied.append(doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
+                    logger.info("*** delete_apposition Not Applied ***")
+                    self.log_step(doc_sub_part, "delete_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
+                    logger.info("--------------------------")
 
             # {"condition": has_apposition, "action": split_apposition}
             # app_applied = []
@@ -261,8 +281,7 @@ class SimplifierPipeline:
             sub_applied = []
             is_sub_applied = False
             
-            #for sub_part in app_applied:
-            for sub_part in punc_applied:
+            for sub_part in app_applied:
                 doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
                 
                 if has_subordinate_clause(doc_sub_part):
@@ -282,8 +301,8 @@ class SimplifierPipeline:
                     self.log_step(doc_text_sentence, "simplify_subordinate", False, doc_sub_part)
 
             if not is_sub_applied:
-                #sub_applied = app_applied
-                sub_applied = punc_applied
+                sub_applied = app_applied
+                #sub_applied = punc_applied
                 logger.info("*** simplify_subordinate Not Applied ***")
                 
             logger.info("--------------------------")
@@ -402,7 +421,6 @@ class SimplifierPipeline:
             logger.debug("-------- \n simplified_sentence \n -------- \n%s", pformat(normalized_tense_applied))
         
         df = pd.DataFrame(self.simplification_log)
-        df.to_csv("simplification_log.csv", index=False)
 
         #print(type(simplified_sentences))
         return simplified_sentences
@@ -467,7 +485,7 @@ class SimplifierPipeline:
                 # 6.After processing all splits for this input,
                 #join and save ONE output line
             joined = " ".join(simplified_texts)
-            all_simplified_text.append(joined)  # One line per simplified sentence
+            all_simplified_text.append(final_cleanup(joined))  # One line per simplified sentence
 
         # 6. After all sentences are processed, append the log once
         if doc_name is None:
