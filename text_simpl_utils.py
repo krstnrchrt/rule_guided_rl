@@ -369,8 +369,7 @@ def reorder_SVO(doc):
     sent = re.sub(r'\s+([.?!,])', r'\1', sent).strip()
     return sent
 
-#_________
-
+#_________ helper function
 
 
 # -- Subordinate Clause Detection and Simplification
@@ -430,23 +429,52 @@ def simplify_subordinate(doc):
         return [doc.text]
     
     sub_span, main_clause_tokens = extract_clause_spans(doc, marker_token)
-    
-    #Special case for "um..zu"
     main_subject = get_subject(doc)
     if marker_token.text.lower() == "um":
         sub_text = handle_um_zu(sub_span, main_subject)
     else:
-        # Clean subordinate clause text, remove marker and commas
         sub_text = clean_subordinate_text(sub_span, marker_token)
-    
-    # Build main clause text with connective
+
+    # --- PATCH: restore subject if missing ---
+    sub_doc = nlp(sub_text)
+    if not any(tok.dep_ in {"nsubj", "sb"} for tok in sub_doc) and main_subject:
+        # Insert subject at the start
+        sub_text = f"{main_subject} {sub_text}"
+
     main_text = build_main_clause(main_clause_tokens, marker_token)
-    
-    # Ensure periods, no double dots
+    main_doc = nlp(main_text)
+    if not any(tok.dep_ in {"nsubj", "sb"} for tok in main_doc) and main_subject:
+        main_text = f"{main_subject} {main_text}"
+
+    # Add periods as before
     sub_text = add_period_and_strip(sub_text)
     main_text = add_period_and_strip(main_text)
-    
     return [sub_text, main_text]
+
+
+# def simplify_subordinate(doc):
+#     marker_token = has_subordinate_clause(doc)
+#     if not marker_token:
+#         return [doc.text]
+    
+#     sub_span, main_clause_tokens = extract_clause_spans(doc, marker_token)
+    
+#     #Special case for "um..zu"
+#     main_subject = get_subject(doc)
+#     if marker_token.text.lower() == "um":
+#         sub_text = handle_um_zu(sub_span, main_subject)
+#     else:
+#         # Clean subordinate clause text, remove marker and commas
+#         sub_text = clean_subordinate_text(sub_span, marker_token)
+    
+#     # Build main clause text with connective
+#     main_text = build_main_clause(main_clause_tokens, marker_token)
+    
+#     # Ensure periods, no double dots
+#     sub_text = add_period_and_strip(sub_text)
+#     main_text = add_period_and_strip(main_text)
+    
+#     return [sub_text, main_text]
 
 # -- Coordinate Clause Detection and Simplification
 
@@ -477,42 +505,78 @@ def extract_subtree_span(token):
 
 def simplify_coordinate(doc):
     clauses = []
-    conj_indices = [i for i, t in enumerate(doc) if t.text.lower() in COORD_CONJ and t.dep_ == "cd"] #check fot coordinating conjunction
-    
+    conj_indices = [i for i, t in enumerate(doc) if t.text.lower() in COORD_CONJ and t.dep_ == "cd"]
     if not conj_indices:
         return [doc]
-        
     start = 0
+    main_subject = get_subject(doc)
     for idx, conj_idx in enumerate(conj_indices):
-        # Everything before this conjunction (since start)
         first_clause = doc[start:conj_idx]
-        # The conjunction itself
         conj = doc[conj_idx].text
-        # Everything after this conjunction, up to next conjunction or end
         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
         second_clause = doc[conj_idx + 1:next_conj_idx]
 
-        # --- Clean up the first clause ---
+        # First clause
         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
-        # Only add period if not already present and not empty
-        if first_text and not first_text.endswith('.'):
+        first_doc = nlp(first_text)
+        if not any(tok.dep_ in {"nsubj", "sb"} for tok in first_doc) and main_subject:
+            first_text = f"{main_subject} {first_text}"
+        if not first_text.endswith('.'):
             first_text += "."
-        if first_text:
-            clauses.append(first_text)
+        clauses.append(first_text)
 
-        # --- Clean up the second clause ---
+        # Second clause (starts with conjunction)
         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
-        # Only add period if not already present and not empty
-        if second_text:
-            if not second_text.endswith('.'):
-                second_text += "."
-            # Add conjunction at start (capitalize for Leichte Sprache)
-            second_sentence = f"{conj.capitalize()} {second_text}"
-            clauses.append(second_sentence)
+        second_doc = nlp(second_text)
+        if not any(tok.dep_ in {"nsubj", "sb"} for tok in second_doc) and main_subject:
+            second_text = f"{main_subject} {second_text}"
+        # Leichte Sprache: capitalize conjunction at start
+        if not second_text.endswith('.'):
+            second_text += "."
+        clauses.append(f"{conj.capitalize()} {second_text}")
 
         start = next_conj_idx
-
     return clauses
+
+
+# def simplify_coordinate(doc):
+#     clauses = []
+#     conj_indices = [i for i, t in enumerate(doc) if t.text.lower() in COORD_CONJ and t.dep_ == "cd"] #check fot coordinating conjunction
+    
+#     if not conj_indices:
+#         return [doc]
+        
+#     start = 0
+#     for idx, conj_idx in enumerate(conj_indices):
+#         # Everything before this conjunction (since start)
+#         first_clause = doc[start:conj_idx]
+#         # The conjunction itself
+#         conj = doc[conj_idx].text
+#         # Everything after this conjunction, up to next conjunction or end
+#         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
+#         second_clause = doc[conj_idx + 1:next_conj_idx]
+
+#         # --- Clean up the first clause ---
+#         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
+#         # Only add period if not already present and not empty
+#         if first_text and not first_text.endswith('.'):
+#             first_text += "."
+#         if first_text:
+#             clauses.append(first_text)
+
+#         # --- Clean up the second clause ---
+#         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
+#         # Only add period if not already present and not empty
+#         if second_text:
+#             if not second_text.endswith('.'):
+#                 second_text += "."
+#             # Add conjunction at start (capitalize for Leichte Sprache)
+#             second_sentence = f"{conj.capitalize()} {second_text}"
+#             clauses.append(second_sentence)
+
+#         start = next_conj_idx
+
+#     return clauses
 
 
 # ========== Convert Passive to Active ==========
@@ -728,14 +792,16 @@ def get_aux_form(aux_lemma, subj):
         if person == "3" and number == "Plur":
             return "haben"
         return "hat"
+#======================
 
-
+#======================
 def normalize_verb_tense(doc):
     """
     Converts:
     - Präteritum → Perfekt (hat/ist + Partizip II)
     - Futur → Präsens
     - Konjunktiv  → Perfekt
+    - Handles modal+infinitive 
     Leaves verbs already in Präsens or Partizip unchanged.
     Returns simplified sentence as string.
     """
@@ -760,8 +826,8 @@ def normalize_verb_tense(doc):
         tense = tok.morph.get("Tense", [])
         mood = tok.morph.get("Mood", [])
         verbform = tok.morph.get("VerbForm", [])
-        # logger.info(f"Token: {tok.text}, POS: {tok.pos_}, Lemma: {lemma}, Tense: {tense}, Mood: {mood}, VerbForm: {verbform}")
-        # logger.info(f"Should be AUX{tok.pos_})")
+        #logger.info(f"Token: {tok.text}, POS: {tok.pos_}, Lemma: {lemma}, Tense: {tense}, Mood: {mood}, VerbForm: {verbform}")
+        #logger.info(f"Should be AUX{tok.pos_})")
         # print(f"Should be AUX {tok.pos_}, mood {mood})")
 
         # --- CASE 4.1: Convert auxiliary in Konjunktiv to indicativ
@@ -797,8 +863,6 @@ def normalize_verb_tense(doc):
             aux = get_aux_form(aux_lemma, subj)
             applied_perfekt = True
             continue
-         
-
 
         # --- Fallback: keep original
         new_tokens.append(tok.text)
