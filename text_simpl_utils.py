@@ -795,7 +795,7 @@ def get_aux_form(aux_lemma, subj):
 #======================
 
 #======================
-def normalize_verb_tense02(doc):
+def normalize_verb_tense(doc):
     """
     Converts:
     - Präteritum → Perfekt (hat/ist + Partizip II)
