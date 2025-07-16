@@ -302,7 +302,6 @@ COORD_CONJ = {"oder", "aber", "dennoch"} #took "und" out
 
 # TO LOOK AT
 def reorder_SVO(doc):
-    import re
 
     subordinators = set([
         "weil", "da", "obwohl", "sodass", "damit", "um", "nachdem", "bevor",
@@ -443,38 +442,13 @@ def simplify_subordinate(doc):
 
     main_text = build_main_clause(main_clause_tokens, marker_token)
     main_doc = nlp(main_text)
-    if not any(tok.dep_ in {"nsubj", "sb"} for tok in main_doc) and main_subject:
+    if not any(tok.dep_ in {"sb"} for tok in main_doc) and main_subject:
         main_text = f"{main_subject} {main_text}"
 
     # Add periods as before
     sub_text = add_period_and_strip(sub_text)
     main_text = add_period_and_strip(main_text)
     return [sub_text, main_text]
-
-
-# def simplify_subordinate(doc):
-#     marker_token = has_subordinate_clause(doc)
-#     if not marker_token:
-#         return [doc.text]
-    
-#     sub_span, main_clause_tokens = extract_clause_spans(doc, marker_token)
-    
-#     #Special case for "um..zu"
-#     main_subject = get_subject(doc)
-#     if marker_token.text.lower() == "um":
-#         sub_text = handle_um_zu(sub_span, main_subject)
-#     else:
-#         # Clean subordinate clause text, remove marker and commas
-#         sub_text = clean_subordinate_text(sub_span, marker_token)
-    
-#     # Build main clause text with connective
-#     main_text = build_main_clause(main_clause_tokens, marker_token)
-    
-#     # Ensure periods, no double dots
-#     sub_text = add_period_and_strip(sub_text)
-#     main_text = add_period_and_strip(main_text)
-    
-#     return [sub_text, main_text]
 
 # -- Coordinate Clause Detection and Simplification
 
@@ -511,15 +485,18 @@ def simplify_coordinate(doc):
     start = 0
     main_subject = get_subject(doc)
     for idx, conj_idx in enumerate(conj_indices):
+        # Everything before this conjunction (since start)
         first_clause = doc[start:conj_idx]
+        #Capture conjunction
         conj = doc[conj_idx].text
+        # From this conj up to next or end of sentence
         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
         second_clause = doc[conj_idx + 1:next_conj_idx]
 
-        # First clause
+        # First clause - cleanup
         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
         first_doc = nlp(first_text)
-        if not any(tok.dep_ in {"nsubj", "sb"} for tok in first_doc) and main_subject:
+        if not any(tok.dep_ in {"sb"} for tok in first_doc) and main_subject:
             first_text = f"{main_subject} {first_text}"
         if not first_text.endswith('.'):
             first_text += "."
@@ -528,7 +505,7 @@ def simplify_coordinate(doc):
         # Second clause (starts with conjunction)
         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
         second_doc = nlp(second_text)
-        if not any(tok.dep_ in {"nsubj", "sb"} for tok in second_doc) and main_subject:
+        if not any(tok.dep_ in {"sb"} for tok in second_doc) and main_subject:
             second_text = f"{main_subject} {second_text}"
         # Leichte Sprache: capitalize conjunction at start
         if not second_text.endswith('.'):
@@ -537,47 +514,6 @@ def simplify_coordinate(doc):
 
         start = next_conj_idx
     return clauses
-
-
-# def simplify_coordinate(doc):
-#     clauses = []
-#     conj_indices = [i for i, t in enumerate(doc) if t.text.lower() in COORD_CONJ and t.dep_ == "cd"] #check fot coordinating conjunction
-    
-#     if not conj_indices:
-#         return [doc]
-        
-#     start = 0
-#     for idx, conj_idx in enumerate(conj_indices):
-#         # Everything before this conjunction (since start)
-#         first_clause = doc[start:conj_idx]
-#         # The conjunction itself
-#         conj = doc[conj_idx].text
-#         # Everything after this conjunction, up to next conjunction or end
-#         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
-#         second_clause = doc[conj_idx + 1:next_conj_idx]
-
-#         # --- Clean up the first clause ---
-#         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
-#         # Only add period if not already present and not empty
-#         if first_text and not first_text.endswith('.'):
-#             first_text += "."
-#         if first_text:
-#             clauses.append(first_text)
-
-#         # --- Clean up the second clause ---
-#         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
-#         # Only add period if not already present and not empty
-#         if second_text:
-#             if not second_text.endswith('.'):
-#                 second_text += "."
-#             # Add conjunction at start (capitalize for Leichte Sprache)
-#             second_sentence = f"{conj.capitalize()} {second_text}"
-#             clauses.append(second_sentence)
-
-#         start = next_conj_idx
-
-#     return clauses
-
 
 # ========== Convert Passive to Active ==========
 
