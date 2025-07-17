@@ -162,7 +162,7 @@ class SimplifierPipeline:
                 text = split_compound_word(text)
 
             # Step 3: Substitute complex word with simpler synonym using predefined dict
-            text = replace_easy_german(text)
+            #text = replace_easy_german(text)
 
             # Copy and update token
             updated_token = token.copy()

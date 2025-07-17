@@ -517,7 +517,19 @@ def simplify_coordinate(doc):
 
 # ========== Convert Passive to Active ==========
 
+SEIN_AUX_VERBS = {"sein", "abbiegen", "ausfallen", "ausweichen", "auffallen", "auswandern", "aufstehen", "aufwachen", "bleiben", "durchfallen", "eintreffen", "entstehen", "explodieren", "ersticken", "einschlafen", "ertrinken", "fahren",
+                   "fallen", "fliegen", "fliehen", "fließen", "flüchten", "folgen", "gehen", "gelingen", "geschehen", "hüpfen", "joggen", "klettern", "kommen", "kriechen", "landen", "laufen", "misslingen", "paddeln", "passieren", 
+                   "platzen", "reisen", "reiten", "rudern", "schlüpfen", "schwellen", "schwimmen", "segeln", "springen", "steigen", "starten", "stehen", "stehenbleiben", "sterben", "stolpern", "stürzen", "tauchen", "tauen", "treten",
+                   "umfallen", "verbrennen", "verblühen", "verhungern", "verschwinden", "verzweifeln", "vorkommen", "wandern", "werden", "zurückkehren", "ziehen"}
+
+
 def get_perfekt_aux_for_verb(lemma):
+    """
+    Returns 'sein' if verb is found in defined list, 
+    otherwise looks up from verb_dict or gives out haben as default
+    """
+    if lemma in SEIN_AUX_VERBS:
+        return "sein"
     aux = AUX_VERB_DICT.get(lemma, "haben")
     if "/" in aux:
         aux = aux.split("/")[0]
@@ -743,6 +755,17 @@ def normalize_verb_tense(doc):
     """
     subj = find_subject(doc)
     subject_token = subj.text if subj else ""
+    #find the subj head
+    if subj:
+        for np in doc.noun_chunks:
+            if subj in np:
+                subject_span = np
+                break
+        else:
+            subject_span = doc[subj.left_edge.i : subj.right_edge.i+1]
+        subject_token = subject_span.text
+    else:
+        subject_token = ""
     person = int(subj.morph.get("Person")[0]) if subj and subj.morph.get("Person") else 3
     number = subj.morph.get("Number")[0] if subj and subj.morph.get("Number") else "Sing"
 
@@ -753,9 +776,9 @@ def normalize_verb_tense(doc):
     applied_perfekt = False
 
     for tok in doc:
-        # if tok.pos_ != "VERB":
-        #     new_tokens.append(tok.text)
-        #     continue
+        if tok.pos_ not in {"AUX","VERB"}:
+            new_tokens.append(tok.text)
+            continue
 
         pos = tok.pos_
         lemma = tok.lemma_
@@ -765,6 +788,12 @@ def normalize_verb_tense(doc):
         #logger.info(f"Token: {tok.text}, POS: {tok.pos_}, Lemma: {lemma}, Tense: {tense}, Mood: {mood}, VerbForm: {verbform}")
         #logger.info(f"Should be AUX{tok.pos_})")
         # print(f"Should be AUX {tok.pos_}, mood {mood})")
+
+        # --- CASE 3: Futur I or II → Präsens
+        if "Fut" in tense:
+            present = conjugate(lemma, PRESENT, person=person, number=SG if number == "Sing" else PL)
+            new_tokens.append(present if present else lemma)
+            continue
 
         # --- CASE 4.1: Convert auxiliary in Konjunktiv to indicativ
         if pos == "AUX" and "Sub" in mood:
@@ -786,12 +815,6 @@ def normalize_verb_tense(doc):
             applied_perfekt = True
             continue
 
-        # --- CASE 3: Futur I or II → Präsens
-        if "Fut" in tense:
-            present = conjugate(lemma, PRESENT, person=person, number=SG if number == "Sing" else PL)
-            new_tokens.append(present if present else lemma)
-            continue
-
         # --- CASE 4: Konjunktiv → Perfekt
         if pos == "VERB" and "Sub" in mood:
             participle = conjugate(lemma, PAST+PARTICIPLE)
@@ -810,9 +833,15 @@ def normalize_verb_tense(doc):
         if new_tokens and new_tokens[-1] in {".", "!", "?"}:
             punct = new_tokens.pop()
         # Output: subj + aux + [rest] + participle + punct
-        # If subject is first in tokens, don't duplicate it
-        # Remove subject from tokens_out if present (to avoid duplication)
-        tokens_out = [t for t in new_tokens if t != subject_token]
+        # Remove all tokens from from tokens_out if present (to avoid duplication)
+        tokens_out = []
+        for t in new_tokens:
+            # skip any token that comes from subject_span
+            if subj and t in subject_span.text.split():
+                continue
+            tokens_out.append(t)
+
+
         result = " ".join([subject_token, aux] + tokens_out + [participle])
         if punct:
             result += punct
