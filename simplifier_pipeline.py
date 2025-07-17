@@ -5,6 +5,7 @@ import json
 import re
 import importlib
 import text_simpl_utils
+import datetime
 importlib.reload(text_simpl_utils)
 from text_simpl_utils import *
 #from compounds import analyze_compound
@@ -132,6 +133,7 @@ def replace_easy_german(text: str) -> str:
 # -- Simplifier Pipeline
 class SimplifierPipeline:
     def __init__(self):
+        self.uid = None # unique id for every sentence in a given file
         self.simplification_log = []  # Each entry will be a dict with orig, rule, simplified
         self.current_doc_name = None
         # Initialize rules
@@ -160,7 +162,7 @@ class SimplifierPipeline:
                 text = split_compound_word(text)
 
             # Step 3: Substitute complex word with simpler synonym using predefined dict
-            text = replace_easy_german(text)
+            #text = replace_easy_german(text)
 
             # Copy and update token
             updated_token = token.copy()
@@ -169,7 +171,7 @@ class SimplifierPipeline:
             #logger.debug("-------- \n simplified \n -------- \n%s", pformat(simplified))
         return simplified
 
-    def log_step(self, original, rule, applied, simplified, doc_name=None):
+    def log_step(self, uid, original, rule, applied, simplified, doc_name=None):
         # If 'simplified' is a list, log each separately for full traceability
         if doc_name is None:
             doc_name = self.current_doc_name # Use current doc name if not provided
@@ -177,6 +179,7 @@ class SimplifierPipeline:
         if isinstance(simplified, list):
             for item in simplified:
                 entry = {
+                    "uid": uid,
                     "original": str(original),
                     "rule": rule,
                     "applied": applied,
@@ -187,6 +190,7 @@ class SimplifierPipeline:
                 self.simplification_log.append(entry)
         else:
             entry = {
+                "uid": uid,
                 "original": str(original),
                 "rule": rule,
                 "applied": applied,
@@ -227,12 +231,12 @@ class SimplifierPipeline:
                 logger.info("*** clean_punctuation Applied ***")
 
                 #once rule was applied, save it to the log
-                self.log_step(doc_text_sentence, "clean_punctuation", True, punc_applied)
+                self.log_step(self.uid, doc_text_sentence, "clean_punctuation", True, punc_applied)
                 
             else:
                 punc_applied = [doc_text_sentence]
                 logger.info("*** clean_punctuation Not Applied ***")
-                self.log_step(doc_text_sentence, "clean_punctuation", False, doc_text_sentence)
+                self.log_step(self.uid, doc_text_sentence, "clean_punctuation", False, doc_text_sentence)
 
             logger.info("--------------------------")
             
@@ -250,11 +254,11 @@ class SimplifierPipeline:
                         app_applied.extend(app_applied_subpart)
                     else:
                         app_applied.append(app_applied_subpart)
-                    self.log_step(doc_sub_part, "rewrite_apposition", True, app_applied_subpart)
+                    self.log_step(self.uid, doc_sub_part, "rewrite_apposition", True, app_applied_subpart)
                 else:
                     app_applied.append(doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
                     logger.info("*** rewrite_apposition Not Applied ***")
-                    self.log_step(doc_sub_part, "rewrite_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
+                    self.log_step(self.uid, doc_sub_part, "rewrite_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
                     logger.info("--------------------------")
 
             # {"condition": has_apposition, "action": split_apposition}
@@ -293,12 +297,12 @@ class SimplifierPipeline:
                     logger.info("*** simplify_subordinate Applied ***")
                     
                     # once rule was applied, save it to the log
-                    self.log_step(doc_text_sentence, "simplify_subordinate", True, sub_applied_sub_part)
+                    self.log_step(self.uid, doc_text_sentence, "simplify_subordinate", True, sub_applied_sub_part)
 
                 else:
                     #sub_applied.extend(doc_sub_part)
                     sub_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
-                    self.log_step(doc_text_sentence, "simplify_subordinate", False, doc_sub_part)
+                    self.log_step(self.uid, doc_text_sentence, "simplify_subordinate", False, doc_sub_part)
 
             if not is_sub_applied:
                 sub_applied = app_applied
@@ -321,7 +325,7 @@ class SimplifierPipeline:
                     coor_applied_sub_part = simplify_coordinate(doc_sub_part)
                     logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
                     #log
-                    self.log_step(doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
                     
                     if isinstance(coor_applied_sub_part, list):
                         coor_applied.extend(coor_applied_sub_part)
@@ -333,7 +337,7 @@ class SimplifierPipeline:
                 else:
                     #coor_applied.extend(doc_sub_part)
                     coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
-                    self.log_step(doc_sub_part, "simplify_coordinate", False, doc_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
                     
             if not is_coor_applied:
                 coor_applied = sub_applied
@@ -369,7 +373,7 @@ class SimplifierPipeline:
                     logger.info("Applying Now !!! for -- %s", doc_sub_part)
                     pass_act_applied_sub_part = convert_passive_to_active(doc_sub_part)
                     logger.info("convert_passive_to_active Applied: %s", pass_act_applied_sub_part)
-                    self.log_step(doc_sub_part, "convert_passive_to_active", True, pass_act_applied_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "convert_passive_to_active", True, pass_act_applied_sub_part)
 
                     if isinstance(pass_act_applied_sub_part, list):
                         passive_active_applied.extend(pass_act_applied_sub_part)
@@ -380,7 +384,7 @@ class SimplifierPipeline:
                     
                 else:
                     passive_active_applied.append(doc_sub_part) #TODO
-                    self.log_step(doc_sub_part, "convert_passive_to_active", False, doc_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "convert_passive_to_active", False, doc_sub_part)
             if not is_passive_to_active:
                 passive_active_applied = coor_applied
                 logger.info("*** convert_passive_to_active Not Applied ***")
@@ -399,7 +403,7 @@ class SimplifierPipeline:
                     logger.info("Applying Now !!! for -- %s", doc_sub_part)
                     tense_applied_sub_part = normalize_verb_tense(doc_sub_part)
                     logger.info("normalize_verb_tense Applied: %s", tense_applied_sub_part)
-                    self.log_step(doc_sub_part, "normalize_verb_tense", True, tense_applied_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "normalize_verb_tense", True, tense_applied_sub_part)
                     # if it returns a list, extend, if it returns a string, append
                     if isinstance(tense_applied_sub_part, list):
                         normalized_tense_applied.extend(tense_applied_sub_part)
@@ -410,7 +414,7 @@ class SimplifierPipeline:
 
                 else:
                     normalized_tense_applied.append(doc_sub_part) #TODO
-                    self.log_step(doc_sub_part, "normalize_verb_tense", False, doc_sub_part)
+                    self.log_step(self.uid, doc_sub_part, "normalize_verb_tense", False, doc_sub_part)
 
 
             if not is_normalized_tense:
@@ -437,7 +441,15 @@ class SimplifierPipeline:
         # Update doc_name within function
         self.current_doc_name = doc_name
 
+        
+        
+        self.uid = 0
         for tokens in sentences:
+            self.uid = self.uid + 1
+            #print ("********")
+            #print (tokens)
+            #print ("********")
+            
               
             # 1)Token-level simplification
             simplified_tokens = self.simplify_tokens(tokens)
@@ -491,7 +503,8 @@ class SimplifierPipeline:
         if doc_name is None:
             doc_name = "unknown_doc"
         base_name = os.path.splitext(os.path.basename(doc_name))[0]
-        csv_path = f"simplification_logs/{base_name}_log.csv"
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        csv_path = f"simplification_logs/{base_name}_log_{timestamp}.csv"
         self.append_log_to_csv(csv_path)  # Save log after each document
 
         #return "\n".join(all_simplified)

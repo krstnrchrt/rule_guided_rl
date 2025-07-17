@@ -302,7 +302,6 @@ COORD_CONJ = {"oder", "aber", "dennoch"} #took "und" out
 
 # TO LOOK AT
 def reorder_SVO(doc):
-    import re
 
     subordinators = set([
         "weil", "da", "obwohl", "sodass", "damit", "um", "nachdem", "bevor",
@@ -443,38 +442,13 @@ def simplify_subordinate(doc):
 
     main_text = build_main_clause(main_clause_tokens, marker_token)
     main_doc = nlp(main_text)
-    if not any(tok.dep_ in {"nsubj", "sb"} for tok in main_doc) and main_subject:
+    if not any(tok.dep_ in {"sb"} for tok in main_doc) and main_subject:
         main_text = f"{main_subject} {main_text}"
 
     # Add periods as before
     sub_text = add_period_and_strip(sub_text)
     main_text = add_period_and_strip(main_text)
     return [sub_text, main_text]
-
-
-# def simplify_subordinate(doc):
-#     marker_token = has_subordinate_clause(doc)
-#     if not marker_token:
-#         return [doc.text]
-    
-#     sub_span, main_clause_tokens = extract_clause_spans(doc, marker_token)
-    
-#     #Special case for "um..zu"
-#     main_subject = get_subject(doc)
-#     if marker_token.text.lower() == "um":
-#         sub_text = handle_um_zu(sub_span, main_subject)
-#     else:
-#         # Clean subordinate clause text, remove marker and commas
-#         sub_text = clean_subordinate_text(sub_span, marker_token)
-    
-#     # Build main clause text with connective
-#     main_text = build_main_clause(main_clause_tokens, marker_token)
-    
-#     # Ensure periods, no double dots
-#     sub_text = add_period_and_strip(sub_text)
-#     main_text = add_period_and_strip(main_text)
-    
-#     return [sub_text, main_text]
 
 # -- Coordinate Clause Detection and Simplification
 
@@ -511,15 +485,18 @@ def simplify_coordinate(doc):
     start = 0
     main_subject = get_subject(doc)
     for idx, conj_idx in enumerate(conj_indices):
+        # Everything before this conjunction (since start)
         first_clause = doc[start:conj_idx]
+        #Capture conjunction
         conj = doc[conj_idx].text
+        # From this conj up to next or end of sentence
         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
         second_clause = doc[conj_idx + 1:next_conj_idx]
 
-        # First clause
+        # First clause - cleanup
         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
         first_doc = nlp(first_text)
-        if not any(tok.dep_ in {"nsubj", "sb"} for tok in first_doc) and main_subject:
+        if not any(tok.dep_ in {"sb"} for tok in first_doc) and main_subject:
             first_text = f"{main_subject} {first_text}"
         if not first_text.endswith('.'):
             first_text += "."
@@ -528,7 +505,7 @@ def simplify_coordinate(doc):
         # Second clause (starts with conjunction)
         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
         second_doc = nlp(second_text)
-        if not any(tok.dep_ in {"nsubj", "sb"} for tok in second_doc) and main_subject:
+        if not any(tok.dep_ in {"sb"} for tok in second_doc) and main_subject:
             second_text = f"{main_subject} {second_text}"
         # Leichte Sprache: capitalize conjunction at start
         if not second_text.endswith('.'):
@@ -538,50 +515,21 @@ def simplify_coordinate(doc):
         start = next_conj_idx
     return clauses
 
-
-# def simplify_coordinate(doc):
-#     clauses = []
-#     conj_indices = [i for i, t in enumerate(doc) if t.text.lower() in COORD_CONJ and t.dep_ == "cd"] #check fot coordinating conjunction
-    
-#     if not conj_indices:
-#         return [doc]
-        
-#     start = 0
-#     for idx, conj_idx in enumerate(conj_indices):
-#         # Everything before this conjunction (since start)
-#         first_clause = doc[start:conj_idx]
-#         # The conjunction itself
-#         conj = doc[conj_idx].text
-#         # Everything after this conjunction, up to next conjunction or end
-#         next_conj_idx = conj_indices[idx + 1] if idx + 1 < len(conj_indices) else len(doc)
-#         second_clause = doc[conj_idx + 1:next_conj_idx]
-
-#         # --- Clean up the first clause ---
-#         first_text = " ".join([t.text for t in first_clause]).strip().rstrip(",")
-#         # Only add period if not already present and not empty
-#         if first_text and not first_text.endswith('.'):
-#             first_text += "."
-#         if first_text:
-#             clauses.append(first_text)
-
-#         # --- Clean up the second clause ---
-#         second_text = " ".join([t.text for t in second_clause]).strip().lstrip(",").rstrip(",")
-#         # Only add period if not already present and not empty
-#         if second_text:
-#             if not second_text.endswith('.'):
-#                 second_text += "."
-#             # Add conjunction at start (capitalize for Leichte Sprache)
-#             second_sentence = f"{conj.capitalize()} {second_text}"
-#             clauses.append(second_sentence)
-
-#         start = next_conj_idx
-
-#     return clauses
-
-
 # ========== Convert Passive to Active ==========
 
+SEIN_AUX_VERBS = {"sein", "abbiegen", "ausfallen", "ausweichen", "auffallen", "auswandern", "aufstehen", "aufwachen", "bleiben", "durchfallen", "eintreffen", "entstehen", "explodieren", "ersticken", "einschlafen", "ertrinken", "fahren",
+                   "fallen", "fliegen", "fliehen", "fließen", "flüchten", "folgen", "gehen", "gelingen", "geschehen", "hüpfen", "joggen", "klettern", "kommen", "kriechen", "landen", "laufen", "misslingen", "paddeln", "passieren", 
+                   "platzen", "reisen", "reiten", "rudern", "schlüpfen", "schwellen", "schwimmen", "segeln", "springen", "steigen", "starten", "stehen", "stehenbleiben", "sterben", "stolpern", "stürzen", "tauchen", "tauen", "treten",
+                   "umfallen", "verbrennen", "verblühen", "verhungern", "verschwinden", "verzweifeln", "vorkommen", "wandern", "werden", "zurückkehren", "ziehen"}
+
+
 def get_perfekt_aux_for_verb(lemma):
+    """
+    Returns 'sein' if verb is found in defined list, 
+    otherwise looks up from verb_dict or gives out haben as default
+    """
+    if lemma in SEIN_AUX_VERBS:
+        return "sein"
     aux = AUX_VERB_DICT.get(lemma, "haben")
     if "/" in aux:
         aux = aux.split("/")[0]
@@ -807,6 +755,17 @@ def normalize_verb_tense(doc):
     """
     subj = find_subject(doc)
     subject_token = subj.text if subj else ""
+    #find the subj head
+    if subj:
+        for np in doc.noun_chunks:
+            if subj in np:
+                subject_span = np
+                break
+        else:
+            subject_span = doc[subj.left_edge.i : subj.right_edge.i+1]
+        subject_token = subject_span.text
+    else:
+        subject_token = ""
     person = int(subj.morph.get("Person")[0]) if subj and subj.morph.get("Person") else 3
     number = subj.morph.get("Number")[0] if subj and subj.morph.get("Number") else "Sing"
 
@@ -817,9 +776,9 @@ def normalize_verb_tense(doc):
     applied_perfekt = False
 
     for tok in doc:
-        # if tok.pos_ != "VERB":
-        #     new_tokens.append(tok.text)
-        #     continue
+        if tok.pos_ not in {"AUX","VERB"}:
+            new_tokens.append(tok.text)
+            continue
 
         pos = tok.pos_
         lemma = tok.lemma_
@@ -829,6 +788,12 @@ def normalize_verb_tense(doc):
         #logger.info(f"Token: {tok.text}, POS: {tok.pos_}, Lemma: {lemma}, Tense: {tense}, Mood: {mood}, VerbForm: {verbform}")
         #logger.info(f"Should be AUX{tok.pos_})")
         # print(f"Should be AUX {tok.pos_}, mood {mood})")
+
+        # --- CASE 3: Futur I or II → Präsens
+        if "Fut" in tense:
+            present = conjugate(lemma, PRESENT, person=person, number=SG if number == "Sing" else PL)
+            new_tokens.append(present if present else lemma)
+            continue
 
         # --- CASE 4.1: Convert auxiliary in Konjunktiv to indicativ
         if pos == "AUX" and "Sub" in mood:
@@ -850,12 +815,6 @@ def normalize_verb_tense(doc):
             applied_perfekt = True
             continue
 
-        # --- CASE 3: Futur I or II → Präsens
-        if "Fut" in tense:
-            present = conjugate(lemma, PRESENT, person=person, number=SG if number == "Sing" else PL)
-            new_tokens.append(present if present else lemma)
-            continue
-
         # --- CASE 4: Konjunktiv → Perfekt
         if pos == "VERB" and "Sub" in mood:
             participle = conjugate(lemma, PAST+PARTICIPLE)
@@ -874,9 +833,15 @@ def normalize_verb_tense(doc):
         if new_tokens and new_tokens[-1] in {".", "!", "?"}:
             punct = new_tokens.pop()
         # Output: subj + aux + [rest] + participle + punct
-        # If subject is first in tokens, don't duplicate it
-        # Remove subject from tokens_out if present (to avoid duplication)
-        tokens_out = [t for t in new_tokens if t != subject_token]
+        # Remove all tokens from from tokens_out if present (to avoid duplication)
+        tokens_out = []
+        for t in new_tokens:
+            # skip any token that comes from subject_span
+            if subj and t in subject_span.text.split():
+                continue
+            tokens_out.append(t)
+
+
         result = " ".join([subject_token, aux] + tokens_out + [participle])
         if punct:
             result += punct
