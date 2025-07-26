@@ -446,6 +446,8 @@ class SimplifierPipeline:
         self.uid = 0
         for tokens in sentences:
             self.uid = self.uid + 1
+            if (self.uid % 1000) == 0: #implement a progress tracker
+                print ("Progress:", self.uid)
             #print ("********")
             #print (tokens)
             #print ("********")
