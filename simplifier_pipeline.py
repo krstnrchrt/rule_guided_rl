@@ -11,7 +11,7 @@ from text_simpl_utils import *
 #from compounds import analyze_compound
 
 from word2num_de import word_to_number
-from compound_split import doc_split
+#from compound_split import doc_split
 
 from german_compound_splitter import comp_split
 
@@ -34,14 +34,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Build your path *relative* to the script's location
 utf8_file = os.path.join(SCRIPT_DIR, "resources", "german_dict", "german_utf8.dic")
-ahocs = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
+ahoc = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
 
 # --- Number Transformation ---
 
 NUMBER_DICT = {
     # Ordinals
-    "erster": "1", "zweiter": "2", "dritter": "3", "vierter": "4", "fünfter": "5", "sechster": "6", "siebter": "7",
-    "achter": "8", "neunter": "9", "zehnter": "10", "elfter": "11", "zwölfter": "12",
+    "erst": "1.", "zweit": "2.", "dritt": "3.", "viert": "4.", "fünft": "5.", "sechst": "6.", "siebt": "7.",
+    "acht": "8.", "neunt": "9.", "zehnt": "10.", "elft": "11.", "zwölft": "12.",
     # Fractions
     "halb": "0.5", "eineinhalb": "1.5", "zweieinhalb": "2.5", "dreieinhalb": "3.5", "viereinhalb": "4.5",
     "fünfeinhalb": "5.5", "sechseinhalb": "6.5", "siebeneinhalb": "7.5", "achteinhalb": "8.5", "neuneinhalb": "9.5", "zehneinhalb": "10.5",
@@ -52,23 +52,38 @@ RE_ORDINAL = re.compile(r"^\d+\.$")
 
 def like_num(text):
     text_lower = text.lower()
+
     if text_lower in NUMBER_DICT:
         return True
     if RE_NUMERIC.match(text) or RE_ORDINAL.match(text):
         return True
     try:
-        word_to_number(text_lower)  # word2num_de
+        word_to_number(text_lower) # word2num_de
         return True
     except Exception:
-        return False
+        try:
+            word_to_number(text_lower) # word2num_de
+            return True
+        except Exception:
+            return False
 
 def is_number(token):
-    text_lower = token['text'].lower()
-    #return text_lower != "ein" and (text_lower in NUMBER_DICT or token['pos'] == "NUM")
-    return text_lower != "ein" and (like_num(text_lower) in NUMBER_DICT or token['pos'] == "NUM")
+    #token.text and token.pos_
+    token_text = token['text']
+    token_pos = token['pos']
+    if token_text.lower() == "ein" and token_pos != "NUM":
+        return False
+    
+#     if like_num(token):
+#         return True
+    
+#     if token_pos in {"ADJ"} and token['lemma'].lower() in NUMBER_DICT:
+#         return True
+#     return token_pos == "NUM"
 
 def convert_word_to_number(text):
     text_lower = text.lower()
+
     if text_lower in NUMBER_DICT:
         return NUMBER_DICT[text_lower]
     if RE_NUMERIC.match(text):
@@ -78,40 +93,94 @@ def convert_word_to_number(text):
     try:
         return str(word_to_number(text_lower))  # word2num_de
     except Exception:
-        return text
-
+        try:
+            return str(word_to_number(text_lower))
+        except Exception:
+            return text
 
 # ----
 
+# def check_compound_split(token):
+#     return (
+#         token['pos'] in {"NOUN", "PROPN"} and
+#         len(token['text']) > 5 and
+#         token['ent_type'] not in {"PER", "LOC", "ORG"}
+#     )
 def check_compound_split(token):
+    if token["text"] is None:
+        print("Token text is None, cannot check compound split.")
     return (
-        token['pos'] in {"NOUN", "PROPN"} and
-        len(token['text']) > 5 and
-        token['ent_type'] not in {"PER", "LOC", "ORG"}
-    )
+        token["pos"] == "NOUN"
+            and len(token["text"]) >= 5  
+            and token["text"][0].isupper()       
+            and token["ent_type"] not in {"PER", "LOC", "ORG"}
+            )  
 
 MIDDLE_DOT = "·"
-def split_compound_word(text, ahocs):
-    parts = comp_split.merge_fractions(comp_split.dissect(text, ahocs))
-    if not parts or len(parts) < 2:
+HYPHEN_RX = re.compile(r"[-–—]") #recognise hyphen-minus, en-dash, em-dash
+
+# def check_compound_split(token):
+#     return (
+#         token.get("pos") == "NOUN"
+#         and len(token.get("text", "")) >= 5
+#         and token["text"][0].isupper()          # safe because len already checked
+#         and token.get("ent_type", "") not in {"PER", "LOC", "ORG"}
+#     )
+
+def split_compound_word(text: str, ahoc):
+
+    # if already hyphenated, replace with middle dot
+    if HYPHEN_RX.search(text):
+        # remove optional spaces around the dash, then swap dash for mediopunkt
+        cleaned = HYPHEN_RX.sub(MIDDLE_DOT, text.replace(" ", ""))
+        return cleaned
+    
+     # apply dictionary splitter  (guarded against IndexError)
+    try:
+        raw_parts = comp_split.dissect(text, ahoc)
+        if raw_parts is None:
+            logger.warning("dissect returned None for text=%s", text)
+            return text
+    except Exception as e:
+        logger.error("dissect failed for text=%s, error=%s", text, e)
         return text
-    if any(len(part) < 3 for part in parts):
+    # except IndexError:
+    #     return text
+    
+    if not raw_parts or len(raw_parts) < 2:
         return text
-    if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
+
+    # Otherwise continue as before
+    parts = comp_split.merge_fractions(raw_parts)
+    if not parts or len(parts) < 2: #make sure at least two segments are returned
         return text
+    # if any(len(part) < 3 for part in parts): # # if any part is too short, return original text
+    #     return text
+    if len(parts[0]) <= 4 and len(parts[-1]) <= 4: # following konvens, if both elements are <=4 char, not hard to read
+        return text
+    
+    # post-process each part: keep first letter, lowercase the rest
+    #EXPERIMENTAL
+    parts = [p[0] + p[1:].lower() for p in parts]
     return MIDDLE_DOT.join(parts)
 
-def split_compound_word(text):
-    parts = doc_split.maximal_split(text)
-    if not parts or len(parts) < 2:
-        return text
-    if any(len(part) < 3 for part in parts):
-        return text
-    if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
-        return text
-    return doc_split.MIDDLE_DOT.join(parts)
+
+
+
+#outdated compound splitter
+
+# def split_compound_word(text):
+#     parts = doc_split.maximal_split(text)
+#     if not parts or len(parts) < 2:
+#         return text
+#     if any(len(part) < 3 for part in parts):
+#         return text
+#     if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
+#         return text
+#     return doc_split.MIDDLE_DOT.join(parts)
 
 # == Text Replacement Functions ===
+# NOT IN USE CURRENTLY
 # Load the mapping from JSON
 with open("resources/replace_words/alternative_woerter.json", encoding="utf-8") as f:
     mapped_dict = json.load(f)
@@ -128,7 +197,7 @@ def _replacer(m):
 # One-pass replace function
 def replace_easy_german(text: str) -> str:
     return pattern.sub(_replacer, text)
-# ==
+# =================================
 
 # -- Simplifier Pipeline
 class SimplifierPipeline:
@@ -146,6 +215,15 @@ class SimplifierPipeline:
             {"condition": has_disallowed_tense, "action": normalize_verb_tense}
         ]
 
+    # def log_compound(self, uid, token, new_text):
+    #     """Custom logging for compound splitting step."""
+    #     applied = token["text"] != new_text
+    #     self.log_step(uid,
+    #                   token["text"],
+    #                   "split_compound",
+    #                   applied,
+    #                   new_text)    
+
     def simplify_tokens(self, tokens):
         simplified = []
         #logger.debug("-------- \n tokens \n -------- \n%s", pformat(tokens))
@@ -154,12 +232,38 @@ class SimplifierPipeline:
             #logger.debug("-------- \n text \n -------- \n%s", pformat(text))
 
             # 1) Convert word to number if it's numeric
+            applied_num = False
             if is_number(token):
-                text = convert_word_to_number(text)
+                new_text = convert_word_to_number(text)
+                applied_num = token["text"] != new_text
+
+                self.log_step(
+                    self.uid,
+                    token["text"],           # original
+                    "convert_word_to_number",
+                    applied_num,             # True or False
+                    new_text                 # final form
+                )
+                text = new_text
+            else:
+                text = token["text"]  # keep original text if not a number
 
             # 2) Split compound if applicable
+            applied_compound_split = False
             if check_compound_split(token):
-                text = split_compound_word(text)
+                new_text = split_compound_word(text, ahoc)  # Use the initialised compound splitter
+                applied_compound_split = token["text"] != new_text
+                text = new_text
+                # Log the compound splitting step
+                #self.log_compound(self.uid, token, text)
+
+                self.log_step(
+                self.uid,
+                token["text"],           # original
+                "split_compound",
+                applied_compound_split,  # True or False
+                text                     # final form
+                )
 
             # Step 3: Substitute complex word with simpler synonym using predefined dict
             #text = replace_easy_german(text)
@@ -314,34 +418,34 @@ class SimplifierPipeline:
             
 
             # {"condition": has_subordinate_clause, "action": simplify_subordinate}
-            coor_applied = []
-            is_coor_applied = False
+            # coor_applied = []
+            # is_coor_applied = False
             
-            for sub_part in sub_applied:
-                doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
+            # for sub_part in sub_applied:
+            #     doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
                 
-                if has_coordinate_clause(doc_sub_part):
-                    logger.info("Applying Now !!! for -- %s", doc_sub_part)
-                    coor_applied_sub_part = simplify_coordinate(doc_sub_part)
-                    logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
-                    #log
-                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
+            #     if has_coordinate_clause(doc_sub_part):
+            #         logger.info("Applying Now !!! for -- %s", doc_sub_part)
+            #         coor_applied_sub_part = simplify_coordinate(doc_sub_part)
+            #         logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
+            #         #log
+            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
                     
-                    if isinstance(coor_applied_sub_part, list):
-                        coor_applied.extend(coor_applied_sub_part)
-                    else:
-                        coor_applied.append(coor_applied_sub_part)
-                    is_coor_applied = True
-                    logger.info("*** simplify_coordinate Applied ***")
+            #         if isinstance(coor_applied_sub_part, list):
+            #             coor_applied.extend(coor_applied_sub_part)
+            #         else:
+            #             coor_applied.append(coor_applied_sub_part)
+            #         is_coor_applied = True
+            #         logger.info("*** simplify_coordinate Applied ***")
                 
-                else:
-                    #coor_applied.extend(doc_sub_part)
-                    coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
-                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
+            #     else:
+            #         #coor_applied.extend(doc_sub_part)
+            #         coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
+            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
                     
-            if not is_coor_applied:
-                coor_applied = sub_applied
-                logger.info("*** simplify_coordinate Not Applied ***")
+            # if not is_coor_applied:
+            #     coor_applied = sub_applied
+            #     logger.info("*** simplify_coordinate Not Applied ***")
                 
             logger.info("--------------------------")
 
@@ -365,7 +469,7 @@ class SimplifierPipeline:
             is_passive_to_active = False
 
             #for sub_part in svo_applied: #TODO
-            for sub_part in coor_applied:
+            for sub_part in sub_applied:
                 doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
                 
 
@@ -386,7 +490,7 @@ class SimplifierPipeline:
                     passive_active_applied.append(doc_sub_part) #TODO
                     self.log_step(self.uid, doc_sub_part, "convert_passive_to_active", False, doc_sub_part)
             if not is_passive_to_active:
-                passive_active_applied = coor_applied
+                passive_active_applied = sub_applied
                 logger.info("*** convert_passive_to_active Not Applied ***")
                 
            
