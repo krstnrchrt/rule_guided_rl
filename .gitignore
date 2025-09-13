@@ -5,9 +5,9 @@ __pycache__/
 
 # resouces files to stay out for now
 resources/
-preprocessed_texts/
+preprocessed_texts/*
 simplification_logs/
-preprocessed_texts/apa-rst/1_preprocessed
+preprocessed_texts/apa-rst/1_preprocessed/*
 master_data/
 
 # ignore metrics and outdated files
