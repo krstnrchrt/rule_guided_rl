@@ -134,8 +134,13 @@ def split_compound_word(text: str, ahoc):
     # if already hyphenated, replace with middle dot
     if HYPHEN_RX.search(text):
         # remove optional spaces around the dash, then swap dash for mediopunkt
-        cleaned = HYPHEN_RX.sub(MIDDLE_DOT, text.replace(" ", ""))
-        return cleaned
+        # cleaned = HYPHEN_RX.sub(MIDDLE_DOT, text.replace(" ", ""))
+        # return cleaned
+
+        # If the word is already hyphenated, split by the hyphen, capitalize each part, then join with middle dot
+        # Use re.split to handle different dash types
+        parts = [p.capitalize() for p in HYPHEN_RX.split(text) if p]
+        return MIDDLE_DOT.join(parts)
     
      # apply dictionary splitter  (guarded against IndexError)
     try:
@@ -162,8 +167,9 @@ def split_compound_word(text: str, ahoc):
         return text
     
     # post-process each part: keep first letter, lowercase the rest
-    #EXPERIMENTAL
-    parts = [p[0] + p[1:].lower() for p in parts]
+    #EXPERIMENTALparts = [p[0] + p[1:].lower() for p in parts]
+    #Capitalize EACH part of the compound correctly
+    parts = [p.capitalize() for p in parts]
     return MIDDLE_DOT.join(parts)
 
 
@@ -217,11 +223,18 @@ def casing_fix(doc: spacy.tokens.Doc) -> str:
     - Correctly returns the modified string.
     """
     final_words = []
+    is_first_token = True
     # Iterate through each sentence detected by spaCy
     for sent in doc.sents:
         # Enumerate the tokens within each sentence
         for i, token in enumerate(sent):
             word = token.text
+
+            # Rule 0: If a token is a compound split with a middle dot, or hyphen, fix its casing first.
+            if '·' in word or '-' in word:
+                # Split by either character, capitalize each part, and rejoin with a middle dot.
+                parts = [p.capitalize() for p in re.split('[·-]', word)]
+                word = '·'.join(parts)
 
             # Rule 1: Capitalize the first alphabetic token of the sentence.
             if i == 0 and token.is_alpha:
@@ -243,6 +256,11 @@ def casing_fix(doc: spacy.tokens.Doc) -> str:
             # This correctly reconstructs the sentence.
             final_words.append(word)
             final_words.append(token.whitespace_)
+
+            # FIX 2: Correctly update the flag for the NEXT token.
+            # If the current token is sentence-ending punctuation, the next one is a new start.
+            if token.is_sent_end:
+                is_first_token = True
 
     return "".join(final_words).strip()
     
