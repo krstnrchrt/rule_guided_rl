@@ -11,7 +11,7 @@ from text_simpl_utils import *
 #from compounds import analyze_compound
 
 from word2num_de import word_to_number
-from compound_split import doc_split
+#from compound_split import doc_split
 
 from german_compound_splitter import comp_split
 
@@ -34,14 +34,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Build your path *relative* to the script's location
 utf8_file = os.path.join(SCRIPT_DIR, "resources", "german_dict", "german_utf8.dic")
-ahocs = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
+ahoc = comp_split.read_dictionary_from_file(utf8_file) #activate the compound_spliter
 
 # --- Number Transformation ---
 
 NUMBER_DICT = {
     # Ordinals
-    "erster": "1", "zweiter": "2", "dritter": "3", "vierter": "4", "fünfter": "5", "sechster": "6", "siebter": "7",
-    "achter": "8", "neunter": "9", "zehnter": "10", "elfter": "11", "zwölfter": "12",
+    "erster": "1.", "zweiter": "2.", "dritter": "3.", "vierter": "4.", "fünfter": "5.", "sechster": "6.", "siebter": "7.",
+    "achter": "8.", "neunter": "9.", "zehnter": "10.", "elfter": "11.", "zwölfter": "12.",
     # Fractions
     "halb": "0.5", "eineinhalb": "1.5", "zweieinhalb": "2.5", "dreieinhalb": "3.5", "viereinhalb": "4.5",
     "fünfeinhalb": "5.5", "sechseinhalb": "6.5", "siebeneinhalb": "7.5", "achteinhalb": "8.5", "neuneinhalb": "9.5", "zehneinhalb": "10.5",
@@ -52,66 +52,221 @@ RE_ORDINAL = re.compile(r"^\d+\.$")
 
 def like_num(text):
     text_lower = text.lower()
+
     if text_lower in NUMBER_DICT:
         return True
     if RE_NUMERIC.match(text) or RE_ORDINAL.match(text):
         return True
     try:
-        word_to_number(text_lower)  # word2num_de
-        return True
+        num =  word_to_number(text_lower) # word2num_de
+        return isinstance(num, (int, float)) # only accept if parsing gives an int/float
     except Exception:
-        return False
+        try:
+            word_to_number(text_lower) # word2num_de
+            return True
+        except Exception:
+            return False
 
 def is_number(token):
-    text_lower = token['text'].lower()
-    #return text_lower != "ein" and (text_lower in NUMBER_DICT or token['pos'] == "NUM")
-    return text_lower != "ein" and (like_num(text_lower) in NUMBER_DICT or token['pos'] == "NUM")
-
+    #token.text and token.pos_
+    token_text = token['text']
+    token_pos = token['pos']
+    lemma = token['lemma'].lower()
+    if token_text.lower() == "ein" and token_pos != "NUM":
+        return False
+    
+    if like_num(token_text): #explicit matches
+        return True
+    
+    if token_pos == "ADJ" and lemma in NUMBER_DICT: #ordinals (ADJ) that are in NUMBER_DICT
+        return True
+    
+    return token_pos == "NUM"
+    
 def convert_word_to_number(text):
-    text_lower = text.lower()
-    if text_lower in NUMBER_DICT:
-        return NUMBER_DICT[text_lower]
+    doc = nlp(text)
+    lemma = doc[0].lemma_.lower()
+    #print("Lemma:", lemma)
+    #print("Text:", text)
+
+    if lemma in NUMBER_DICT:
+        return NUMBER_DICT[lemma]
     if RE_NUMERIC.match(text):
         return text.replace(",", ".")
     if RE_ORDINAL.match(text):
         return text[:-1]
     try:
-        return str(word_to_number(text_lower))  # word2num_de
+        return str(word_to_number(text.lower()))  # word2num_de
     except Exception:
-        return text
-
+        return text #if nothing applies, always return original text
 
 # ----
 
+# def check_compound_split(token):
+#     return (
+#         token['pos'] in {"NOUN", "PROPN"} and
+#         len(token['text']) > 5 and
+#         token['ent_type'] not in {"PER", "LOC", "ORG"}
+#     )
 def check_compound_split(token):
+    if token["text"] is None:
+        print("Token text is None, cannot check compound split.")
     return (
-        token['pos'] in {"NOUN", "PROPN"} and
-        len(token['text']) > 5 and
-        token['ent_type'] not in {"PER", "LOC", "ORG"}
-    )
+        token["pos"] == "NOUN"
+            and len(token["text"]) >= 5  
+            and token["text"][0].isupper()       
+            and token["ent_type"] not in {"PER", "LOC", "ORG"}
+            )  
 
 MIDDLE_DOT = "·"
-def split_compound_word(text, ahocs):
-    parts = comp_split.merge_fractions(comp_split.dissect(text, ahocs))
-    if not parts or len(parts) < 2:
+HYPHEN_RX = re.compile(r"[-–—]") #recognise hyphen-minus, en-dash, em-dash
+
+# def check_compound_split(token):
+#     return (
+#         token.get("pos") == "NOUN"
+#         and len(token.get("text", "")) >= 5
+#         and token["text"][0].isupper()          # safe because len already checked
+#         and token.get("ent_type", "") not in {"PER", "LOC", "ORG"}
+#     )
+
+def split_compound_word(text: str, ahoc):
+
+    # if already hyphenated, replace with middle dot
+    if HYPHEN_RX.search(text):
+        # remove optional spaces around the dash, then swap dash for mediopunkt
+        # cleaned = HYPHEN_RX.sub(MIDDLE_DOT, text.replace(" ", ""))
+        # return cleaned
+
+        # If the word is already hyphenated, split by the hyphen, capitalize each part, then join with middle dot
+        # Use re.split to handle different dash types
+        parts = [p.capitalize() for p in HYPHEN_RX.split(text) if p]
+        return MIDDLE_DOT.join(parts)
+    
+     # apply dictionary splitter  (guarded against IndexError)
+    try:
+        raw_parts = comp_split.dissect(text, ahoc)
+        if raw_parts is None:
+            logger.warning("dissect returned None for text=%s", text)
+            return text
+    except Exception as e:
+        logger.error("dissect failed for text=%s, error=%s", text, e)
         return text
-    if any(len(part) < 3 for part in parts):
+    # except IndexError:
+    #     return text
+    
+    if not raw_parts or len(raw_parts) < 2:
         return text
-    if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
+
+    # Otherwise continue as before
+    parts = comp_split.merge_fractions(raw_parts)
+    if not parts or len(parts) < 2: #make sure at least two segments are returned
         return text
+    # if any(len(part) < 3 for part in parts): # # if any part is too short, return original text
+    #     return text
+    if len(parts[0]) <= 4 and len(parts[-1]) <= 4: # following konvens, if both elements are <=4 char, not hard to read
+        return text
+    
+    # post-process each part: keep first letter, lowercase the rest
+    #EXPERIMENTALparts = [p[0] + p[1:].lower() for p in parts]
+    #Capitalize EACH part of the compound correctly
+    parts = [p.capitalize() for p in parts]
     return MIDDLE_DOT.join(parts)
 
-def split_compound_word(text):
-    parts = doc_split.maximal_split(text)
-    if not parts or len(parts) < 2:
-        return text
-    if any(len(part) < 3 for part in parts):
-        return text
-    if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
-        return text
-    return doc_split.MIDDLE_DOT.join(parts)
+
+
+
+#outdated compound splitter
+
+# def split_compound_word(text):
+#     parts = doc_split.maximal_split(text)
+#     if not parts or len(parts) < 2:
+#         return text
+#     if any(len(part) < 3 for part in parts):
+#         return text
+#     if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
+#         return text
+#     return doc_split.MIDDLE_DOT.join(parts)
+
+# ============== Casing helper function
+# def casing_fix(doc: spacy.tokens.Doc) -> str:
+#     """
+#     Corrects sentence casing using linguistic information.
+#     - Capitalizes the first token.
+#     - Lowercases other tokens unless they are proper nouns or acronyms.
+#     """
+#     final_tokens = []
+#     for i, token in enumerate(doc):
+#         token_text = token.text
+#         if i == 0:
+#             # Always capitalize the first letter of the first token
+#             final_tokens.append(token_text.capitalize())
+#         # Preserve proper nouns (PROPN) and entities like persons/locations
+#         elif token.pos_ == 'PROPN' or token.ent_type_ in {"PER", "LOC", "ORG"}:
+#             final_tokens.append(token_text)
+#         # Preserve acronyms (heuristic: all-caps and more than 1 letter)
+#         elif token_text.isupper() and len(token_text) > 1:
+#             final_tokens.append(token_text)
+#         else:
+#             # Lowercase all other tokens
+#             final_tokens.append(token_text.lower())
+    
+#     #Join tokens with correct spacing based on the original Doc
+#     #return "".join([tok.text_with_ws for tok in doc]).strip() 
+#     return "".join([final_tokens[i] + doc[i].whitespace_ for i in range(len(final_tokens))]).strip()
+
+def casing_fix(doc: spacy.tokens.Doc) -> str:
+    """
+    A token-based function to correct sentence casing for German.
+    - Capitalizes the first word of every sentence.
+    - Capitalizes all words tagged as NOUN or PROPN.
+    - Lowercases other words (unless they are all-caps like acronyms).
+    - Correctly returns the modified string.
+    """
+    final_words = []
+    is_first_token = True
+    # Iterate through each sentence detected by spaCy
+    for sent in doc.sents:
+        # Enumerate the tokens within each sentence
+        for i, token in enumerate(sent):
+            word = token.text
+
+            # Rule 0: If a token is a compound split with a middle dot, or hyphen, fix its casing first.
+            if '·' in word or '-' in word:
+                # Split by either character, capitalize each part, and rejoin with a middle dot.
+                parts = [p.capitalize() for p in re.split('[·-]', word)]
+                word = '·'.join(parts)
+
+            # Rule 1: Capitalize the first alphabetic token of the sentence.
+            if i == 0 and token.is_alpha:
+                word = word.capitalize()
+            
+            # Rule 2: In German, ALL nouns must be capitalized.
+            elif token.pos_ in {"NOUN", "PROPN"}:
+                word = word.capitalize()
+
+            # Rule 3: Preserve acronyms that are fully uppercase.
+            elif token.is_upper and len(word) > 1:
+                pass  # Keep the word as is
+            
+            # Rule 4: Default to lowercasing for all other words.
+            else:
+                word = word.lower()
+
+            # Append the corrected word AND its original trailing whitespace.
+            # This correctly reconstructs the sentence.
+            final_words.append(word)
+            final_words.append(token.whitespace_)
+
+            # FIX 2: Correctly update the flag for the NEXT token.
+            # If the current token is sentence-ending punctuation, the next one is a new start.
+            if token.is_sent_end:
+                is_first_token = True
+
+    return "".join(final_words).strip()
+    
 
 # == Text Replacement Functions ===
+# NOT IN USE CURRENTLY
 # Load the mapping from JSON
 with open("resources/replace_words/alternative_woerter.json", encoding="utf-8") as f:
     mapped_dict = json.load(f)
@@ -128,7 +283,7 @@ def _replacer(m):
 # One-pass replace function
 def replace_easy_german(text: str) -> str:
     return pattern.sub(_replacer, text)
-# ==
+# =================================
 
 # -- Simplifier Pipeline
 class SimplifierPipeline:
@@ -136,6 +291,7 @@ class SimplifierPipeline:
         self.uid = None # unique id for every sentence in a given file
         self.simplification_log = []  # Each entry will be a dict with orig, rule, simplified
         self.current_doc_name = None
+        self.initial_original_sent = ""
         # Initialize rules
         self.rules = [
             {"condition": detect_punctuation, "action": clean_syntactic_punctuation},
@@ -146,6 +302,15 @@ class SimplifierPipeline:
             {"condition": has_disallowed_tense, "action": normalize_verb_tense}
         ]
 
+    # def log_compound(self, uid, token, new_text):
+    #     """Custom logging for compound splitting step."""
+    #     applied = token["text"] != new_text
+    #     self.log_step(uid,
+    #                   token["text"],
+    #                   "split_compound",
+    #                   applied,
+    #                   new_text)    
+
     def simplify_tokens(self, tokens):
         simplified = []
         #logger.debug("-------- \n tokens \n -------- \n%s", pformat(tokens))
@@ -154,12 +319,38 @@ class SimplifierPipeline:
             #logger.debug("-------- \n text \n -------- \n%s", pformat(text))
 
             # 1) Convert word to number if it's numeric
+            applied_num = False
             if is_number(token):
-                text = convert_word_to_number(text)
+                new_text = convert_word_to_number(text)
+                applied_num = token["text"] != new_text
+
+                self.log_step(
+                    self.uid,
+                    token["text"],           # original
+                    "convert_word_to_number",
+                    applied_num,             # True or False
+                    new_text                 # final form
+                )
+                text = new_text
+            else:
+                text = token["text"]  # keep original text if not a number
 
             # 2) Split compound if applicable
+            applied_compound_split = False
             if check_compound_split(token):
-                text = split_compound_word(text)
+                new_text = split_compound_word(text, ahoc)  # Use the initialised compound splitter
+                applied_compound_split = token["text"] != new_text
+                text = new_text
+                # Log the compound splitting step
+                #self.log_compound(self.uid, token, text)
+
+                self.log_step(
+                self.uid,
+                token["text"],           # original
+                "split_compound",
+                applied_compound_split,  # True or False
+                text                     # final form
+                )
 
             # Step 3: Substitute complex word with simpler synonym using predefined dict
             #text = replace_easy_german(text)
@@ -180,6 +371,7 @@ class SimplifierPipeline:
             for item in simplified:
                 entry = {
                     "uid": uid,
+                    "initial_original_sentence": self.initial_original_sentence, # debug
                     "original": str(original),
                     "rule": rule,
                     "applied": applied,
@@ -192,6 +384,7 @@ class SimplifierPipeline:
             entry = {
                 "uid": uid,
                 "original": str(original),
+                "initial_original_sentence": self.initial_original_sentence, # debug
                 "rule": rule,
                 "applied": applied,
                 "simplified": str(simplified)
@@ -314,34 +507,34 @@ class SimplifierPipeline:
             
 
             # {"condition": has_subordinate_clause, "action": simplify_subordinate}
-            coor_applied = []
-            is_coor_applied = False
+            # coor_applied = []
+            # is_coor_applied = False
             
-            for sub_part in sub_applied:
-                doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
+            # for sub_part in sub_applied:
+            #     doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
                 
-                if has_coordinate_clause(doc_sub_part):
-                    logger.info("Applying Now !!! for -- %s", doc_sub_part)
-                    coor_applied_sub_part = simplify_coordinate(doc_sub_part)
-                    logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
-                    #log
-                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
+            #     if has_coordinate_clause(doc_sub_part):
+            #         logger.info("Applying Now !!! for -- %s", doc_sub_part)
+            #         coor_applied_sub_part = simplify_coordinate(doc_sub_part)
+            #         logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
+            #         #log
+            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
                     
-                    if isinstance(coor_applied_sub_part, list):
-                        coor_applied.extend(coor_applied_sub_part)
-                    else:
-                        coor_applied.append(coor_applied_sub_part)
-                    is_coor_applied = True
-                    logger.info("*** simplify_coordinate Applied ***")
+            #         if isinstance(coor_applied_sub_part, list):
+            #             coor_applied.extend(coor_applied_sub_part)
+            #         else:
+            #             coor_applied.append(coor_applied_sub_part)
+            #         is_coor_applied = True
+            #         logger.info("*** simplify_coordinate Applied ***")
                 
-                else:
-                    #coor_applied.extend(doc_sub_part)
-                    coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
-                    self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
+            #     else:
+            #         #coor_applied.extend(doc_sub_part)
+            #         coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
+            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
                     
-            if not is_coor_applied:
-                coor_applied = sub_applied
-                logger.info("*** simplify_coordinate Not Applied ***")
+            # if not is_coor_applied:
+            #     coor_applied = sub_applied
+            #     logger.info("*** simplify_coordinate Not Applied ***")
                 
             logger.info("--------------------------")
 
@@ -365,7 +558,7 @@ class SimplifierPipeline:
             is_passive_to_active = False
 
             #for sub_part in svo_applied: #TODO
-            for sub_part in coor_applied:
+            for sub_part in sub_applied:
                 doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
                 
 
@@ -386,7 +579,7 @@ class SimplifierPipeline:
                     passive_active_applied.append(doc_sub_part) #TODO
                     self.log_step(self.uid, doc_sub_part, "convert_passive_to_active", False, doc_sub_part)
             if not is_passive_to_active:
-                passive_active_applied = coor_applied
+                passive_active_applied = sub_applied
                 logger.info("*** convert_passive_to_active Not Applied ***")
                 
            
@@ -430,76 +623,76 @@ class SimplifierPipeline:
         return simplified_sentences
         
     def simplify_from_lines(self, conll_lines, doc_name=None):
-        #logger.debug("-------- \n conll_lines \n -------- \n%s", pformat(conll_lines))
         sentences = parse_blocks(conll_lines)
-        #logger.debug("-------- \n sentences \n -------- \n%s", pformat(sentences))
-        all_simplified = []
-        all_simplified_text = []  # Collect normal text output
-
-        # Reset log at start of a batch/document
+        all_simplified_conll = []
+        all_simplified_plain = []
         self.simplification_log = []
-        # Update doc_name within function
         self.current_doc_name = doc_name
-
-        
-        
         self.uid = 0
+
+        # --- MAIN LOOP: Process each original sentence ---
         for tokens in sentences:
-            self.uid = self.uid + 1
-            #print ("********")
-            #print (tokens)
-            #print ("********")
-            
-              
-            # 1)Token-level simplification
+            self.uid += 1
+            if (self.uid % 1000) == 0: #implement a progress tracker
+                print("Progress:", self.uid)
+
+            ### Store the initial original sentence from the ConLL tokens
+            self.initial_original_sentence = " ".join([token["text"] for token in tokens])
+
+            # 1. TOKEN-LEVEL SIMPLIFICATION (Numbers, Compounds)
+            # Input: list of token dicts -> Output: list of token dicts
             simplified_tokens = self.simplify_tokens(tokens)
-            #logger.debug("-------- \n simplified_tokens \n -------- \n%s", pformat(simplified_tokens))
 
-            # 2)Sentence-level rewriting
-            rewritten_sentences = self.simplify_parsed_sentence(simplified_tokens)
-            logger.debug("-------- \n rewritten_sentences \n -------- \n%s", pformat(rewritten_sentences))
+            # 2. SENTENCE-LEVEL REWRITING (Clauses, Passive Voice, etc.)
+            # Input: list of token dicts -> Output: A messy list of strings, Docs, etc.
+            rewritten_items = self.simplify_parsed_sentence(simplified_tokens)
 
-            # Extra step: flatten any nested lists
-            # flat_rewritten_sentences = []
-            # for x in rewritten_sentences:
-            #     if isinstance(x, list):
-            #         flat_rewritten_sentences.extend(x)
-            #     else:
-            #         flat_rewritten_sentences.append(x)
+            # 3. CLEANUP & FLATTEN
+            # Take the messy list and produce a clean, flat list of final sentence strings.
+            final_sentence_strings = []
+            for sent in flatten_to_sentences(rewritten_items):
+                text = sent.strip()
+                if text and len(text.split()) >= 2:
+                    final_sentence_strings.append(text)
 
-            # # Extra step: remove empty strings and short sentences
-            # for rewritten_sent in flat_rewritten_sentences:
-            #         text = rewritten_sent.strip()
-            #         if not text or len(text.split()) < 2:
-            #             continue 
+            if not final_sentence_strings:
+                continue
 
-            simplified_texts = [] #for all output sentences from this input
-            for rewritten_sent in flatten_to_sentences(rewritten_sentences):
-                text = rewritten_sent.strip()
-                if not text or len(text.split()) < 2:
-                    continue
-                simplified_texts.append(text)
+            # 4. Perform FINAL PROCESSING for all sentences
+            # This list will hold the definitive, fully cased and processed strings.
+            fully_processed_strings = []
+            for text_sentence in final_sentence_strings:
+                # Parse the clean sentence string ONCE.
+                doc = nlp(text_sentence)
 
-                    # NEW: Collect normal text output
-                    #all_simplified_text.append(text)  # One line per simplified sentence
-
-                # 3. Parse new rewritten sentence
-                doc = nlp(text)
-
-                # 4. further punctuation-based segmentation
+                # Further split if necessary (e.g., on semicolons).
+                # This function should return a list of spaCy Doc/Span objects.
                 segments = split_on_syntactic_punctuation(doc)
 
-                # 5. Format each segment into CoNLL-style output
                 for seg in segments:
-                    formatted = format_doc_to_conll(seg)
-                    all_simplified.append(formatted)
+                    #seg is currently a list of tokens, convert to Doc
+                    if not seg:
+                        continue
+                    #convert list of tokens back to Doc
+                    text_seg = "".join([token.text_with_ws for token in seg])
+                    doc_seg = nlp(text_seg)
+                    
+                    
+                    # Apply the final casing fix. This returns a string.
+                    cased_text = casing_fix(doc_seg)
+                    fully_processed_strings.append(cased_text)
+                    
+            # 5a. Collect plain text output
+            plain_text_output = " ".join(fully_processed_strings)
+            all_simplified_plain.append(final_cleanup(plain_text_output))
 
-                # 6.After processing all splits for this input,
-                #join and save ONE output line
-            joined = " ".join(simplified_texts)
-            all_simplified_text.append(final_cleanup(joined))  # One line per simplified sentence
+            # 5b. Collect CoNLL output
+            for final_text in fully_processed_strings:
+                final_doc = nlp(final_text)
+                formatted = format_doc_to_conll(final_doc)
+                all_simplified_conll.append(formatted)
 
-        # 6. After all sentences are processed, append the log once
+            # 6. After all sentences are processed, append the log once
         if doc_name is None:
             doc_name = "unknown_doc"
         base_name = os.path.splitext(os.path.basename(doc_name))[0]
@@ -510,9 +703,100 @@ class SimplifierPipeline:
         #return "\n".join(all_simplified)
         # Return both outputs (optionally, as a tuple or dict)
         return {
-        "conll": "\n".join(all_simplified),
-        "plain": "\n".join(all_simplified_text)
+        "conll": "\n".join(all_simplified_conll),
+        "plain": "\n".join(all_simplified_plain)
         }
+    # def simplify_from_lines(self, conll_lines, doc_name=None):
+    #     #logger.debug("-------- \n conll_lines \n -------- \n%s", pformat(conll_lines))
+    #     sentences = parse_blocks(conll_lines)
+    #     #logger.debug("-------- \n sentences \n -------- \n%s", pformat(sentences))
+    #     all_simplified = []
+    #     all_simplified_text = []  # Collect normal text output
+
+    #     # Reset log at start of a batch/document
+    #     self.simplification_log = []
+    #     # Update doc_name within function
+    #     self.current_doc_name = doc_name
+
+        
+        
+    #     self.uid = 0
+    #     for tokens in sentences:
+    #         self.uid = self.uid + 1
+    #         if (self.uid % 1000) == 0: #implement a progress tracker
+    #             print ("Progress:", self.uid)
+    #         #print ("********")
+    #         #print (tokens)
+    #         #print ("********")
+            
+              
+    #         # 1)Token-level simplification -- Numbers, Compounds
+    #         # Input: list of token dicts -> Output: list of token dicts
+    #         simplified_tokens = self.simplify_tokens(tokens)
+    #         #logger.debug("-------- \n simplified_tokens \n -------- \n%s", pformat(simplified_tokens))
+
+    #         # 2)Sentence-level rewriting
+    #         rewritten_sentences = self.simplify_parsed_sentence(simplified_tokens)
+    #         logger.debug("-------- \n rewritten_sentences \n -------- \n%s", pformat(rewritten_sentences))
+
+    #         # Extra step: flatten any nested lists
+    #         # flat_rewritten_sentences = []
+    #         # for x in rewritten_sentences:
+    #         #     if isinstance(x, list):
+    #         #         flat_rewritten_sentences.extend(x)
+    #         #     else:
+    #         #         flat_rewritten_sentences.append(x)
+
+    #         # # Extra step: remove empty strings and short sentences
+    #         # for rewritten_sent in flat_rewritten_sentences:
+    #         #         text = rewritten_sent.strip()
+    #         #         if not text or len(text.split()) < 2:
+    #         #             continue 
+
+    #         # 2.5) Cleanup and flatten.
+    #         simplified_texts = [] #for all output sentences from this input
+    #         for rewritten_sent in flatten_to_sentences(rewritten_sentences):
+    #             text = rewritten_sent.strip()
+    #             if not text or len(text.split()) < 2:
+    #                 continue
+    #             simplified_texts.append(text)
+
+    #                 # NEW: Collect normal text output
+    #                 #all_simplified_text.append(text)  # One line per simplified sentence
+
+    #             # 3. Parse new rewritten sentence
+    #             doc = nlp(text)
+
+    #             # 4. further punctuation-based segmentation
+    #             segments = split_on_syntactic_punctuation(doc)
+
+    #             # 5. Apply casing fix and format each segment into CoNLL-style output
+    #             for seg in segments:
+    #                 fixed_casing = casing_fix(seg) # Apply casing fix
+    #                 corrected_seg = nlp(fixed_casing) # Re-parse after casing fix
+    #                 # Format to CoNLL
+    #                 formatted = format_doc_to_conll(corrected_seg)
+    #                 all_simplified.append(formatted)
+
+    #             # 6.After processing all splits for this input,
+    #             #join and save ONE output line
+    #         joined = " ".join(simplified_texts)
+    #         all_simplified_text.append(final_cleanup(joined))  # One line per simplified sentence
+    
+        #         # 6. After all sentences are processed, append the log once
+        # if doc_name is None:
+        #     doc_name = "unknown_doc"
+        # base_name = os.path.splitext(os.path.basename(doc_name))[0]
+        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # csv_path = f"simplification_logs/{base_name}_log_{timestamp}.csv"
+        # self.append_log_to_csv(csv_path)  # Save log after each document
+
+        # #return "\n".join(all_simplified)
+        # # Return both outputs (optionally, as a tuple or dict)
+        # return {
+        # #"conll": "\n".join(all_simplified),
+        # #"plain": "\n".join(all_simplified_text)
+        # }
     
 
     #If I wish to implement that all logs are to be saved in ONE CSV file at the end
