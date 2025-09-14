@@ -7,7 +7,7 @@ __pycache__/
 resources/
 preprocessed_texts/*
 simplification_logs/
-preprocessed_texts/apa-rst/1_preprocessed/*
+preprocessed_texts/apa-rst/*
 master_data/
 extra_files_collection/*
 
