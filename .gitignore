@@ -9,6 +9,7 @@ preprocessed_texts/*
 simplification_logs/
 preprocessed_texts/apa-rst/1_preprocessed/*
 master_data/
+extra_files_collection/*
 
 # ignore metrics and outdated files
 metrics/
