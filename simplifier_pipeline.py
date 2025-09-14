@@ -291,6 +291,7 @@ class SimplifierPipeline:
         self.uid = None # unique id for every sentence in a given file
         self.simplification_log = []  # Each entry will be a dict with orig, rule, simplified
         self.current_doc_name = None
+        self.initial_original_sent = ""
         # Initialize rules
         self.rules = [
             {"condition": detect_punctuation, "action": clean_syntactic_punctuation},
@@ -370,6 +371,7 @@ class SimplifierPipeline:
             for item in simplified:
                 entry = {
                     "uid": uid,
+                    "initial_original_sentence": self.initial_original_sentence, # debug
                     "original": str(original),
                     "rule": rule,
                     "applied": applied,
@@ -382,6 +384,7 @@ class SimplifierPipeline:
             entry = {
                 "uid": uid,
                 "original": str(original),
+                "initial_original_sentence": self.initial_original_sentence, # debug
                 "rule": rule,
                 "applied": applied,
                 "simplified": str(simplified)
@@ -632,6 +635,9 @@ class SimplifierPipeline:
             self.uid += 1
             if (self.uid % 1000) == 0: #implement a progress tracker
                 print("Progress:", self.uid)
+
+            ### Store the initial original sentence from the ConLL tokens
+            self.initial_original_sentence = " ".join([token["text"] for token in tokens])
 
             # 1. TOKEN-LEVEL SIMPLIFICATION (Numbers, Compounds)
             # Input: list of token dicts -> Output: list of token dicts
