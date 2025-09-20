@@ -10,6 +10,7 @@ simplification_logs/
 preprocessed_texts/apa-rst/*
 master_data/
 extra_files_collection/*
+trl_directory/data
 
 # ignore metrics and outdated files
 metrics/
