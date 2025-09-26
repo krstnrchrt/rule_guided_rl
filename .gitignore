@@ -11,6 +11,7 @@ preprocessed_texts/apa-rst/*
 master_data/
 extra_files_collection/*
 trl_directory/data
+trl_directory/german_dict/
 
 # ignore metrics and outdated files
 metrics/
