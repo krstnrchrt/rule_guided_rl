@@ -5,17 +5,11 @@ __pycache__/
 .vscode/
 
 # resouces files to stay out for now
-resources/
 preprocessed_texts/*
-simplification_logs/
 preprocessed_texts/apa-rst/*
-master_data/
 extra_files_collection/*
-trl_directory/data
-trl_directory/german_dict/
 
 # ignore metrics and outdated files
 metrics/
 outdated_code/
-trl_directory/sft_split_dataset/
 trl_directory/data_collection/
