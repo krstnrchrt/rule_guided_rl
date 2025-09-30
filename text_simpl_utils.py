@@ -140,15 +140,6 @@ def rewrite_apposition(doc):
             appo_start = min([t.i for t in tok.subtree])
             appo_end = max([t.i for t in tok.subtree])
 
-            # Find referent (X): tokens before apposition's first comma
-            # referent_end = appo_start - 2  # comma is at appo_start - 1
-            # referent_start = referent_end
-            # # Walk back to start of NP
-            # while referent_start > 0 and doc[referent_start-1].pos_ in ("DET", "ADJ", "NOUN", "PROPN", "PRON"):
-            #     referent_start -= 1
-            # referent_tokens = [doc[i].text for i in range(referent_start, referent_end+1)]
-            # referent = " ".join(referent_tokens).strip()
-
             referent = find_full_referent(doc, appo_start)
 
             # Apposition tokens
@@ -189,33 +180,6 @@ def rewrite_apposition(doc):
 
     # If no apposition found, return as-is
     return [doc.text]
-# def rewrite_apposition(doc)
-    # # Mark tokens to delete
-    # to_delete = set()
-    # for tok in doc:
-    #     if tok.dep_ == "app":
-    #         # Add the apposition subtree
-    #         to_delete.update(t.i for t in tok.subtree)
-    #         # Also add the comma before apposition, if present
-    #         if tok.nbor(-1).text == ",":
-    #             to_delete.add(tok.nbor(-1).i)
-    #         # And possibly comma after
-    #         try:
-    #             if tok.subtree[-1].nbor(1).text == ",":
-    #                 to_delete.add(tok.subtree[-1].nbor(1).i)
-    #         except Exception:
-    #             pass
-
-    # tokens = [tok.text for i, tok in enumerate(doc) if i not in to_delete]
-    # # Clean up double spaces and stray commas
-    # text = " ".join(tokens)
-    # text = re.sub(r'\s+,', ',', text)
-    # text = re.sub(r',\s+', ', ', text)
-    # text = re.sub(r'\s{2,}', ' ', text)
-    # return text.strip()
-
-    
-
 
 # Split on punctuation
 def detect_punctuation(doc):
@@ -235,14 +199,6 @@ def clean_syntactic_punctuation(doc):
     text = re.sub(r',\s+', ', ', text)
     text = re.sub(r'\s{2,}', ' ', text)
     return text.strip()
-
-# def format_parsed_segments(segments):
-#     out = []
-#     for seg in segments:
-#         out.append("<s>")
-#         out.extend(tok["raw"] for tok in seg)
-#         out.append("</s>\n")
-#     return "\n".join(out)
 
 # -- Utility Functions
 def format_doc_to_conll(doc):
@@ -269,7 +225,7 @@ def flatten_to_sentences(lst):
             out.append(str(item))
     return out
 
-# -- Utility Functiona
+# -- Utility
 
 def is_likely_compound(doc, idx):
     if idx == 0 or idx >= len(doc) - 1:
@@ -300,7 +256,7 @@ SUBORDINATE_MARKERS = {
 }
 COORD_CONJ = {"oder", "aber", "dennoch"} #took "und" out
 
-# TO LOOK AT
+# TO REFINE
 def reorder_SVO(doc):
 
     subordinators = set([
@@ -555,12 +511,7 @@ def get_aux_form_PA(aux_lemma, person, number):
             ("3", "Plur"): "haben"
         }.get((str(person), number), "hat")
     
-# def is_passive(doc):
-#     # Only Vorgangspassiv (werden + participle)
-#     has_werden = any(tok.lemma_ == "werden" and tok.pos_ == "AUX" for tok in doc)
-#     has_participle = any(tok.pos_ == "VERB" and "Part" in tok.morph.get("VerbForm", []) for tok in doc)
-#     return has_werden and has_participle
-#==> needs to be assessed, does it reduce FP?
+#==> needs to be assessed further, does it reduce FP?
 def is_passive(doc):
     # Werden + participle: Vorgangspassiv (event passive)
     has_werden = any(tok.lemma_ == "werden" and tok.pos_ == "AUX" for tok in doc)
@@ -741,8 +692,6 @@ def get_aux_form(aux_lemma, subj):
             return "haben"
         return "hat"
 #======================
-
-#======================
 def normalize_verb_tense(doc):
     """
     Converts:
@@ -848,21 +797,3 @@ def normalize_verb_tense(doc):
         return result.strip()
     else:
         return " ".join(new_tokens)
-
-    
-
-# # -- Recursive simplification function
-# def simplify_sentence(doc):
-#     """ Input: spacy parsed doc
-#     Output: list of simplified sentences"""
-
-#     if should_split_on_punctuation(doc):
-#         return split_on_syntactic_punctuation(doc)
-#     elif has_apposition(doc):
-#         return split_apposition(doc)
-#     elif has_subordinate_clause(doc):
-#         return simplify_subordinate(doc)
-#     elif has_coordinate_clause(doc):
-#         return simplify_coordinate(doc)
-#     else:
-#         return [doc.text] #default, return as it is

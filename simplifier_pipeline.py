@@ -102,12 +102,6 @@ def convert_word_to_number(text):
 
 # ----
 
-# def check_compound_split(token):
-#     return (
-#         token['pos'] in {"NOUN", "PROPN"} and
-#         len(token['text']) > 5 and
-#         token['ent_type'] not in {"PER", "LOC", "ORG"}
-#     )
 def check_compound_split(token):
     if token["text"] is None:
         print("Token text is None, cannot check compound split.")
@@ -120,14 +114,6 @@ def check_compound_split(token):
 
 MIDDLE_DOT = "·"
 HYPHEN_RX = re.compile(r"[-–—]") #recognise hyphen-minus, en-dash, em-dash
-
-# def check_compound_split(token):
-#     return (
-#         token.get("pos") == "NOUN"
-#         and len(token.get("text", "")) >= 5
-#         and token["text"][0].isupper()          # safe because len already checked
-#         and token.get("ent_type", "") not in {"PER", "LOC", "ORG"}
-#     )
 
 def split_compound_word(text: str, ahoc):
 
@@ -171,48 +157,6 @@ def split_compound_word(text: str, ahoc):
     #Capitalize EACH part of the compound correctly
     parts = [p.capitalize() for p in parts]
     return MIDDLE_DOT.join(parts)
-
-
-
-
-#outdated compound splitter
-
-# def split_compound_word(text):
-#     parts = doc_split.maximal_split(text)
-#     if not parts or len(parts) < 2:
-#         return text
-#     if any(len(part) < 3 for part in parts):
-#         return text
-#     if len(parts[0]) <= 4 and len(parts[-1]) <= 4:
-#         return text
-#     return doc_split.MIDDLE_DOT.join(parts)
-
-# ============== Casing helper function
-# def casing_fix(doc: spacy.tokens.Doc) -> str:
-#     """
-#     Corrects sentence casing using linguistic information.
-#     - Capitalizes the first token.
-#     - Lowercases other tokens unless they are proper nouns or acronyms.
-#     """
-#     final_tokens = []
-#     for i, token in enumerate(doc):
-#         token_text = token.text
-#         if i == 0:
-#             # Always capitalize the first letter of the first token
-#             final_tokens.append(token_text.capitalize())
-#         # Preserve proper nouns (PROPN) and entities like persons/locations
-#         elif token.pos_ == 'PROPN' or token.ent_type_ in {"PER", "LOC", "ORG"}:
-#             final_tokens.append(token_text)
-#         # Preserve acronyms (heuristic: all-caps and more than 1 letter)
-#         elif token_text.isupper() and len(token_text) > 1:
-#             final_tokens.append(token_text)
-#         else:
-#             # Lowercase all other tokens
-#             final_tokens.append(token_text.lower())
-    
-#     #Join tokens with correct spacing based on the original Doc
-#     #return "".join([tok.text_with_ws for tok in doc]).strip() 
-#     return "".join([final_tokens[i] + doc[i].whitespace_ for i in range(len(final_tokens))]).strip()
 
 def casing_fix(doc: spacy.tokens.Doc) -> str:
     """
@@ -301,15 +245,6 @@ class SimplifierPipeline:
             {"condition": is_passive, "action": convert_passive_to_active},
             {"condition": has_disallowed_tense, "action": normalize_verb_tense}
         ]
-
-    # def log_compound(self, uid, token, new_text):
-    #     """Custom logging for compound splitting step."""
-    #     applied = token["text"] != new_text
-    #     self.log_step(uid,
-    #                   token["text"],
-    #                   "split_compound",
-    #                   applied,
-    #                   new_text)    
 
     def simplify_tokens(self, tokens):
         simplified = []
@@ -412,7 +347,6 @@ class SimplifierPipeline:
             doc_text_sentence = nlp(text_sentence)
             logger.debug("-------- \n INPUT: -------- %s\n", pformat(doc_text_sentence))
             #logger.debug("-------- \n token \n -------- \n%s", pformat(token))
-            #logger.debug("-------- \n tokens \n -------- \n%s", pformat(tokens))
 
             logger.info("--------------------------")
             if detect_punctuation(doc_text_sentence):
@@ -453,28 +387,7 @@ class SimplifierPipeline:
                     logger.info("*** rewrite_apposition Not Applied ***")
                     self.log_step(self.uid, doc_sub_part, "rewrite_apposition", False, doc_sub_part if hasattr(doc_sub_part, "text") else str(doc_sub_part))
                     logger.info("--------------------------")
-
-            # {"condition": has_apposition, "action": split_apposition}
-            # app_applied = []
-            # is_app_applied = False
-            # for sub_part in punc_applied:
-            #     doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
-            #     if has_apposition(doc_sub_part):
-            #         logger.info("Applying Now !!! for -- %s\n", doc_sub_part)
-            #         app_applied_sub_part = split_apposition(doc_sub_part)
-            #         logger.info("split_apposition Applied: %s\n", app_applied_sub_part)
-            #         app_applied.extend(app_applied_sub_part)
-            #         is_app_applied = True
-            #         logger.info("*** split_apposition Applied ***")
-            #     else:
-            #         app_applied.extend(doc_sub_part)
-            # if not is_app_applied:
-            #     app_applied = punc_applied
-            #     logger.info("*** split_apposition Not Applied ***")
-                
-            logger.info("--------------------------")
-
-            # {"condition": has_subordinate_clause, "action": simplify_subordinate}
+            
             sub_applied = []
             is_sub_applied = False
             
@@ -504,56 +417,6 @@ class SimplifierPipeline:
                 
             logger.info("--------------------------")
 
-            
-
-            # {"condition": has_subordinate_clause, "action": simplify_subordinate}
-            # coor_applied = []
-            # is_coor_applied = False
-            
-            # for sub_part in sub_applied:
-            #     doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
-                
-            #     if has_coordinate_clause(doc_sub_part):
-            #         logger.info("Applying Now !!! for -- %s", doc_sub_part)
-            #         coor_applied_sub_part = simplify_coordinate(doc_sub_part)
-            #         logger.info("simplify_coordinate Applied: %s", coor_applied_sub_part)
-            #         #log
-            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", True, coor_applied_sub_part)
-                    
-            #         if isinstance(coor_applied_sub_part, list):
-            #             coor_applied.extend(coor_applied_sub_part)
-            #         else:
-            #             coor_applied.append(coor_applied_sub_part)
-            #         is_coor_applied = True
-            #         logger.info("*** simplify_coordinate Applied ***")
-                
-            #     else:
-            #         #coor_applied.extend(doc_sub_part)
-            #         coor_applied.append(doc_sub_part) # KEEP OTHERWIESE, either string or doc #TODO
-            #         self.log_step(self.uid, doc_sub_part, "simplify_coordinate", False, doc_sub_part)
-                    
-            # if not is_coor_applied:
-            #     coor_applied = sub_applied
-            #     logger.info("*** simplify_coordinate Not Applied ***")
-                
-            logger.info("--------------------------")
-
-            
-            
-            #TODO
-            """
-            # Apply SVO reordering NEEDS WORK
-            svo_applied = []
-
-            for sub_part in coor_applied:
-                doc_sub_part = nlp(sub_part) if isinstance(sub_part, str) else sub_part
-                logger.info("Applying Now reorder_SVO for -- %s", doc_sub_part)
-                svo_sentence = reorder_SVO(doc_sub_part)
-                logger.info("reorder_SVO Applied: %s", svo_sentence)
-                svo_applied.append(svo_sentence)
-            
-            logger.info("--------------------------")
-            """
             passive_active_applied = []
             is_passive_to_active = False
 
@@ -585,7 +448,6 @@ class SimplifierPipeline:
            
             logger.info("--------------------------")
             
-            # {"condition": has_disallowed_tense, "action": normalize_verb_tense}
             normalized_tense_applied = []
             is_normalized_tense = False
 
@@ -706,114 +568,3 @@ class SimplifierPipeline:
         "conll": "\n".join(all_simplified_conll),
         "plain": "\n".join(all_simplified_plain)
         }
-    # def simplify_from_lines(self, conll_lines, doc_name=None):
-    #     #logger.debug("-------- \n conll_lines \n -------- \n%s", pformat(conll_lines))
-    #     sentences = parse_blocks(conll_lines)
-    #     #logger.debug("-------- \n sentences \n -------- \n%s", pformat(sentences))
-    #     all_simplified = []
-    #     all_simplified_text = []  # Collect normal text output
-
-    #     # Reset log at start of a batch/document
-    #     self.simplification_log = []
-    #     # Update doc_name within function
-    #     self.current_doc_name = doc_name
-
-        
-        
-    #     self.uid = 0
-    #     for tokens in sentences:
-    #         self.uid = self.uid + 1
-    #         if (self.uid % 1000) == 0: #implement a progress tracker
-    #             print ("Progress:", self.uid)
-    #         #print ("********")
-    #         #print (tokens)
-    #         #print ("********")
-            
-              
-    #         # 1)Token-level simplification -- Numbers, Compounds
-    #         # Input: list of token dicts -> Output: list of token dicts
-    #         simplified_tokens = self.simplify_tokens(tokens)
-    #         #logger.debug("-------- \n simplified_tokens \n -------- \n%s", pformat(simplified_tokens))
-
-    #         # 2)Sentence-level rewriting
-    #         rewritten_sentences = self.simplify_parsed_sentence(simplified_tokens)
-    #         logger.debug("-------- \n rewritten_sentences \n -------- \n%s", pformat(rewritten_sentences))
-
-    #         # Extra step: flatten any nested lists
-    #         # flat_rewritten_sentences = []
-    #         # for x in rewritten_sentences:
-    #         #     if isinstance(x, list):
-    #         #         flat_rewritten_sentences.extend(x)
-    #         #     else:
-    #         #         flat_rewritten_sentences.append(x)
-
-    #         # # Extra step: remove empty strings and short sentences
-    #         # for rewritten_sent in flat_rewritten_sentences:
-    #         #         text = rewritten_sent.strip()
-    #         #         if not text or len(text.split()) < 2:
-    #         #             continue 
-
-    #         # 2.5) Cleanup and flatten.
-    #         simplified_texts = [] #for all output sentences from this input
-    #         for rewritten_sent in flatten_to_sentences(rewritten_sentences):
-    #             text = rewritten_sent.strip()
-    #             if not text or len(text.split()) < 2:
-    #                 continue
-    #             simplified_texts.append(text)
-
-    #                 # NEW: Collect normal text output
-    #                 #all_simplified_text.append(text)  # One line per simplified sentence
-
-    #             # 3. Parse new rewritten sentence
-    #             doc = nlp(text)
-
-    #             # 4. further punctuation-based segmentation
-    #             segments = split_on_syntactic_punctuation(doc)
-
-    #             # 5. Apply casing fix and format each segment into CoNLL-style output
-    #             for seg in segments:
-    #                 fixed_casing = casing_fix(seg) # Apply casing fix
-    #                 corrected_seg = nlp(fixed_casing) # Re-parse after casing fix
-    #                 # Format to CoNLL
-    #                 formatted = format_doc_to_conll(corrected_seg)
-    #                 all_simplified.append(formatted)
-
-    #             # 6.After processing all splits for this input,
-    #             #join and save ONE output line
-    #         joined = " ".join(simplified_texts)
-    #         all_simplified_text.append(final_cleanup(joined))  # One line per simplified sentence
-    
-        #         # 6. After all sentences are processed, append the log once
-        # if doc_name is None:
-        #     doc_name = "unknown_doc"
-        # base_name = os.path.splitext(os.path.basename(doc_name))[0]
-        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        # csv_path = f"simplification_logs/{base_name}_log_{timestamp}.csv"
-        # self.append_log_to_csv(csv_path)  # Save log after each document
-
-        # #return "\n".join(all_simplified)
-        # # Return both outputs (optionally, as a tuple or dict)
-        # return {
-        # #"conll": "\n".join(all_simplified),
-        # #"plain": "\n".join(all_simplified_text)
-        # }
-    
-
-    #If I wish to implement that all logs are to be saved in ONE CSV file at the end
-    # comment out the log resetter in simplfy_from_lines beginning
-    # only to reset the log variable when i want to start a new logging session
-    
-    # def save_all_logs(self, csv_path="simplification_log.csv"):
-    #     if not self.simplification_log:
-    #         return
-    #     df = pd.DataFrame(self.simplification_log)
-    #     file_exists = os.path.isfile(csv_path)
-    #     df.to_csv(csv_path, mode='a', header=not file_exists, index=False)
-
-#     at the end of the text simplification pipeline add:
-
-# pipeline = SimplifierPipeline()
-# for file in all_my_input_files:
-#     conll_lines = load_your_conll(file)
-#     pipeline.simplify_from_lines(conll_lines)
-# pipeline.save_all_logs("simplification_log.csv")
