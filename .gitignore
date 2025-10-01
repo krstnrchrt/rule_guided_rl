@@ -8,6 +8,9 @@ __pycache__/
 preprocessed_texts/*
 preprocessed_texts/apa-rst/*
 extra_files_collection/*
+resources/
+master_data/
+simplification_logs/
 
 # ignore metrics and outdated files
 metrics/
